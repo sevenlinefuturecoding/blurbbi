@@ -11,6 +11,7 @@ import { DropCard } from "@/components/blurbi/drop-card";
 import { BlurbiAvatar } from "@/components/blurbi/blurbi-avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { timeAgo, compactCount, type FeedDrop } from "@/lib/blurbi";
+import { recordFeedTelemetry } from "@/lib/intelligence";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -36,13 +37,17 @@ export const Route = createFileRoute("/")({
 type FeedRow = FeedDrop;
 
 async function callFeed(name: string, args: Record<string, unknown>): Promise<FeedRow[]> {
+  const start = performance.now();
   try {
     const { data, error } = await supabase.rpc(name as never, args as never);
+    const latency = Math.round(performance.now() - start);
     if (error) {
       console.warn(`[Feed] RPC ${name} error:`, error.message);
       return [];
     }
-    return (data ?? []) as unknown as FeedRow[];
+    const rows = (data ?? []) as unknown as FeedRow[];
+    recordFeedTelemetry(name, latency, rows.length);
+    return rows;
   } catch (err) {
     console.warn(`[Feed] RPC ${name} exception:`, err);
     return [];

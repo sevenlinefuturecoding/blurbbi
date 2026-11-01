@@ -289,6 +289,8 @@ export type Database = {
           location?: string | null;
           pinned_drop_id?: string | null;
           is_verified?: boolean | null;
+          is_admin?: boolean | null;
+          is_suspended?: boolean | null;
         };
         Insert: {
           avatar_color?: string;
@@ -306,6 +308,8 @@ export type Database = {
           location?: string | null;
           pinned_drop_id?: string | null;
           is_verified?: boolean | null;
+          is_admin?: boolean | null;
+          is_suspended?: boolean | null;
         };
         Update: {
           avatar_color?: string;
@@ -323,6 +327,8 @@ export type Database = {
           location?: string | null;
           pinned_drop_id?: string | null;
           is_verified?: boolean | null;
+          is_admin?: boolean | null;
+          is_suspended?: boolean | null;
         };
         Relationships: [];
       };
@@ -367,6 +373,10 @@ export type Database = {
           note: string | null;
           reason: string;
           reporter_id: string;
+          status: string;
+          resolved_by?: string | null;
+          resolved_at?: string | null;
+          resolution_action?: string | null;
         };
         Insert: {
           created_at?: string;
@@ -375,6 +385,10 @@ export type Database = {
           note?: string | null;
           reason: string;
           reporter_id: string;
+          status?: string;
+          resolved_by?: string | null;
+          resolved_at?: string | null;
+          resolution_action?: string | null;
         };
         Update: {
           created_at?: string;
@@ -383,6 +397,10 @@ export type Database = {
           note?: string | null;
           reason?: string;
           reporter_id?: string;
+          status?: string;
+          resolved_by?: string | null;
+          resolved_at?: string | null;
+          resolution_action?: string | null;
         };
         Relationships: [
           {
@@ -433,6 +451,126 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      algorithm_config: {
+        Row: {
+          id: string;
+          spark_weight: number;
+          echo_weight: number;
+          relay_weight: number;
+          pass_weight: number;
+          decay_gravity: number;
+          time_offset_hours: number;
+          trending_window_hours: number;
+          for_you_window_hours: number;
+          min_spark_for_viral: number;
+          creator_boost_multiplier: number;
+          description: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          spark_weight?: number;
+          echo_weight?: number;
+          relay_weight?: number;
+          pass_weight?: number;
+          decay_gravity?: number;
+          time_offset_hours?: number;
+          trending_window_hours?: number;
+          for_you_window_hours?: number;
+          min_spark_for_viral?: number;
+          creator_boost_multiplier?: number;
+          description?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          spark_weight?: number;
+          echo_weight?: number;
+          relay_weight?: number;
+          pass_weight?: number;
+          decay_gravity?: number;
+          time_offset_hours?: number;
+          trending_window_hours?: number;
+          for_you_window_hours?: number;
+          min_spark_for_viral?: number;
+          creator_boost_multiplier?: number;
+          description?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      experiment_variants: {
+        Row: {
+          id: string;
+          name: string;
+          allocation_pct: number;
+          spark_weight: number;
+          echo_weight: number;
+          relay_weight: number;
+          pass_weight: number;
+          decay_gravity: number;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          allocation_pct: number;
+          spark_weight?: number;
+          echo_weight?: number;
+          relay_weight?: number;
+          pass_weight?: number;
+          decay_gravity?: number;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          allocation_pct?: number;
+          spark_weight?: number;
+          echo_weight?: number;
+          relay_weight?: number;
+          pass_weight?: number;
+          decay_gravity?: number;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      feed_telemetry: {
+        Row: {
+          id: string;
+          feed_type: string;
+          latency_ms: number;
+          items_returned: number;
+          viewer_id: string | null;
+          experiment_variant: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          feed_type: string;
+          latency_ms: number;
+          items_returned: number;
+          viewer_id?: string | null;
+          experiment_variant?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          feed_type?: string;
+          latency_ms?: number;
+          items_returned?: number;
+          viewer_id?: string | null;
+          experiment_variant?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
       };
     };
     Views: {

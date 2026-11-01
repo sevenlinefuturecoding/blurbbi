@@ -22,6 +22,8 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"] & {
   location?: string | null;
   pinned_drop_id?: string | null;
   is_verified?: boolean | null;
+  is_admin?: boolean | null;
+  is_suspended?: boolean | null;
 };
 
 /** Per-viewer engagement state for a set of drops. */

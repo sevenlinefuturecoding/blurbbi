@@ -13,6 +13,7 @@ import {
   LogIn,
   Bell,
   Search,
+  ShieldCheck,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       : []),
     { to: "/hall" as const, label: "Hall of Blurbs", icon: Trophy },
     ...(me ? [{ to: "/settings" as const, label: "Settings", icon: Settings2 }] : []),
+    ...(me?.is_admin ? [{ to: "/admin" as const, label: "Intelligence", icon: ShieldCheck }] : []),
   ];
 
   return (
