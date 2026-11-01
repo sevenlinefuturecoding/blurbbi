@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Flame, MessageCircle, Repeat2, UserPlus, CheckCheck, Bell } from "lucide-react";
+import { Flame, MessageCircle, Repeat2, UserPlus, CheckCheck, Bell, AtSign } from "lucide-react";
 import { useNotifications, type NotificationItem } from "@/hooks/use-notifications";
 import { BlurbiAvatar } from "@/components/blurbi/blurbi-avatar";
 import { Button } from "@/components/ui/button";
@@ -148,13 +148,16 @@ function NotificationsPage() {
                         ? "bg-sky-500"
                         : item.type === "relay"
                           ? "bg-emerald-500"
-                          : "bg-indigo-500"
+                          : item.type === "mention"
+                            ? "bg-primary"
+                            : "bg-indigo-500"
                   }`}
                 >
                   {item.type === "spark" && <Flame className="h-3 w-3 fill-current" />}
                   {item.type === "echo" && <MessageCircle className="h-3 w-3 fill-current" />}
                   {item.type === "relay" && <Repeat2 className="h-3 w-3 stroke-[2.5]" />}
                   {item.type === "orbit" && <UserPlus className="h-3 w-3" />}
+                  {item.type === "mention" && <AtSign className="h-3 w-3" />}
                 </div>
               </div>
 
@@ -175,6 +178,7 @@ function NotificationsPage() {
                       {item.type === "echo" && "echoed on your Drop"}
                       {item.type === "relay" && "relayed your Drop"}
                       {item.type === "orbit" && "started orbiting you"}
+                      {item.type === "mention" && "mentioned you in a Drop"}
                     </span>
                   </p>
                   <span className="shrink-0 text-xs text-muted-foreground">

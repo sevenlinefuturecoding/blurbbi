@@ -8,6 +8,8 @@ import { useEngagement } from "@/hooks/use-engagement";
 import { DropCard } from "@/components/blurbi/drop-card";
 import { BlurbiAvatar } from "@/components/blurbi/blurbi-avatar";
 import { EmojiPickerPopover } from "@/components/blurbi/emoji-picker";
+import { FormattedContent } from "@/components/blurbi/formatted-content";
+import { notifyMentions } from "@/lib/mentions";
 import { Button } from "@/components/ui/button";
 import { MAX_DROP_LENGTH, type FeedDrop, type Profile } from "@/lib/blurbi";
 import { timeAgo } from "@/lib/blurbi";
@@ -140,9 +142,10 @@ function DropDetail() {
     if (!me || !echoText.trim() || busy) return;
     setBusy(true);
     try {
+      const content = echoText.trim();
       const { error } = await supabase
         .from("echoes")
-        .insert({ drop_id: id, user_id: me.id, content: echoText.trim() });
+        .insert({ drop_id: id, user_id: me.id, content });
       if (error) {
         toast.error(
           error.message.includes("echoes_length")
@@ -152,6 +155,7 @@ function DropDetail() {
         return;
       }
       setEchoText("");
+      notifyMentions(id, content, me.id);
       qc.invalidateQueries({ queryKey: ["echoes", id] });
       qc.invalidateQueries({ queryKey: ["drop", id] });
       qc.invalidateQueries({ queryKey: ["drops"] });
@@ -250,7 +254,7 @@ function DropDetail() {
                   </span>
                 </div>
                 <p className="mt-0.5 whitespace-pre-wrap break-words text-[14px] leading-relaxed">
-                  {e.content}
+                  <FormattedContent content={e.content} />
                 </p>
               </div>
             </div>

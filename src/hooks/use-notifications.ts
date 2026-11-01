@@ -5,7 +5,7 @@ import { useMyProfile } from "./use-my-profile";
 
 export type NotificationItem = {
   id: string;
-  type: "spark" | "echo" | "relay" | "orbit";
+  type: "spark" | "echo" | "relay" | "orbit" | "mention";
   read: boolean;
   created_at: string;
   drop_id: string | null;

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BlurbiAvatar } from "./blurbi-avatar";
 import { ReportDialog } from "./report-dialog";
+import { FormattedContent } from "./formatted-content";
 import {
   toggleSpark,
   toggleRelay,
@@ -239,11 +240,14 @@ export function DropCard({
             </DropdownMenu>
           </div>
 
-          <Link to="/drop/$id" params={{ id: drop.drop_id }} className="block">
+          <div
+            onClick={() => navigate({ to: "/drop/$id", params: { id: drop.drop_id } })}
+            className="cursor-pointer"
+          >
             <p className="mt-1.5 whitespace-pre-wrap break-words text-[14.5px] leading-relaxed text-foreground/90">
-              {drop.content}
+              <FormattedContent content={drop.content} />
             </p>
-          </Link>
+          </div>
 
           {/* Actions: touch-friendly, evenly spaced */}
           <div className="mt-2.5 -ml-1.5 flex items-center justify-between text-muted-foreground max-w-sm sm:max-w-md">

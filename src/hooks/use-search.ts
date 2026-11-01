@@ -11,6 +11,7 @@ export type SearchBlurber = {
   avatar_color: string;
   followers_count: number;
   following_count: number;
+  is_verified?: boolean;
 };
 
 /**
@@ -111,7 +112,7 @@ export async function searchProfiles(query: string, limit = 25): Promise<SearchB
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, username, display_name, bio, avatar_emoji, avatar_color, followers_count, following_count",
+        "id, username, display_name, bio, avatar_emoji, avatar_color, followers_count, following_count, is_verified",
       )
       .or(`username.ilike.%${trimmed}%,display_name.ilike.%${trimmed}%,bio.ilike.%${trimmed}%`)
       .order("followers_count", { ascending: false })
@@ -149,18 +150,26 @@ export async function fetchSuggestedProfiles(
     console.warn("suggested_profiles exception:", err);
   }
 
-  // Fallback
+  // Robust fallback excluding viewer and already orbited blurbers
   try {
     let query = supabase
       .from("profiles")
       .select(
-        "id, username, display_name, bio, avatar_emoji, avatar_color, followers_count, following_count",
+        "id, username, display_name, bio, avatar_emoji, avatar_color, followers_count, following_count, is_verified",
       )
       .order("followers_count", { ascending: false })
       .limit(limit);
 
     if (viewerId) {
       query = query.neq("id", viewerId);
+      const { data: followed } = await supabase
+        .from("orbits")
+        .select("followed_id")
+        .eq("follower_id", viewerId);
+      if (followed && followed.length > 0) {
+        const followedIds = followed.map((f: { followed_id: string }) => f.followed_id);
+        query = query.not("id", "in", `(${followedIds.join(",")})`);
+      }
     }
 
     const { data } = await query;

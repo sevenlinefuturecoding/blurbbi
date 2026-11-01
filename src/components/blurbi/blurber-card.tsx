@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Users, Satellite } from "lucide-react";
+import { Users, Satellite, BadgeCheck, Loader2 } from "lucide-react";
 import { BlurbiAvatar } from "./blurbi-avatar";
 import { Button } from "@/components/ui/button";
 import { toggleOrbit, refreshAfterEngagement } from "@/lib/engagement";
@@ -26,6 +26,10 @@ export function BlurberCard({
   const navigate = useNavigate();
   const qc = useQueryClient();
 
+  useEffect(() => {
+    setOrbiting(isOrbited);
+  }, [isOrbited]);
+
   const isSelf = viewerId === blurber.id;
 
   async function handleToggleOrbit(e: React.MouseEvent) {
@@ -49,6 +53,8 @@ export function BlurberCard({
       await refreshAfterEngagement(qc);
       qc.invalidateQueries({ queryKey: ["suggested-profiles"] });
       qc.invalidateQueries({ queryKey: ["profile"] });
+      qc.invalidateQueries({ queryKey: ["orbiters"] });
+      qc.invalidateQueries({ queryKey: ["orbiting"] });
       toast.success(
         nextState ? `Orbiting @${blurber.username} 🛰️` : `Left @${blurber.username}'s orbit`,
       );
@@ -64,11 +70,11 @@ export function BlurberCard({
   return (
     <div
       className={cn(
-        "group flex items-start gap-3.5 rounded-3xl border border-border bg-card p-4 shadow-sm transition-all hover:border-ring/50 hover:shadow-md",
+        "group relative flex items-start gap-3 rounded-2xl border border-border/80 bg-card p-3 sm:p-3.5 shadow-2xs transition-all duration-150 hover:border-border hover:bg-card/90",
         className,
       )}
     >
-      <Link to="/u/$username" params={{ username: blurber.username }} className="shrink-0">
+      <Link to="/u/$username" params={{ username: blurber.username }} className="shrink-0 pt-0.5">
         <BlurbiAvatar
           emoji={blurber.avatar_emoji || "✨"}
           color={blurber.avatar_color || "coral"}
@@ -77,60 +83,70 @@ export function BlurberCard({
       </Link>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center justify-between gap-2">
           <Link
             to="/u/$username"
             params={{ username: blurber.username }}
-            className="min-w-0 flex-1 group-hover:underline"
+            className="min-w-0 flex-1 block"
           >
-            <div className="truncate font-semibold text-foreground text-[15px]">
-              {blurber.display_name || blurber.username}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="truncate text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                {blurber.display_name || blurber.username}
+              </span>
+              {blurber.is_verified && (
+                <span title="Verified Blurber" className="inline-flex shrink-0">
+                  <BadgeCheck className="h-3.5 w-3.5 text-primary fill-primary/20" />
+                </span>
+              )}
             </div>
-            <div className="truncate text-xs text-muted-foreground">@{blurber.username}</div>
+            <p className="truncate text-xs text-muted-foreground">@{blurber.username}</p>
           </Link>
 
-          {!isSelf && (
+          {!isSelf ? (
             <Button
               size="sm"
               variant={orbiting ? "secondary" : "default"}
               onClick={handleToggleOrbit}
               disabled={busy}
               className={cn(
-                "h-8 rounded-full px-3 text-xs font-semibold shrink-0 transition-colors",
-                orbiting &&
-                  "text-muted-foreground hover:border-destructive hover:bg-destructive/10 hover:text-destructive",
+                "h-7.5 rounded-full px-3 text-xs font-semibold shrink-0 transition-all active:scale-95",
+                orbiting
+                  ? "border border-border/70 bg-secondary/80 text-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs",
               )}
             >
-              <Satellite className={cn("mr-1 h-3.5 w-3.5", orbiting && "text-primary")} />
-              {orbiting ? "Orbiting" : "Orbit"}
+              {busy ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Satellite className={cn("mr-1 h-3.5 w-3.5", orbiting ? "text-primary" : "")} />
+              )}
+              {orbiting ? "Following" : "Orbit"}
             </Button>
-          )}
-
-          {isSelf && (
-            <span className="shrink-0 rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+          ) : (
+            <span className="shrink-0 rounded-full bg-secondary/60 px-2.5 py-0.5 text-[10.5px] font-medium text-muted-foreground">
               You
             </span>
           )}
         </div>
 
         {blurber.bio && (
-          <p className="mt-1.5 line-clamp-2 text-xs text-foreground/80 leading-relaxed break-words">
+          <p className="mt-1 line-clamp-1 sm:line-clamp-2 text-xs text-foreground/80 leading-snug break-words">
             {blurber.bio}
           </p>
         )}
 
-        <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+        <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
           <div className="flex items-center gap-1">
-            <Users className="h-3 w-3" />
+            <Users className="h-3 w-3 shrink-0" />
             <span>
               <strong className="font-semibold text-foreground">
                 {compactCount(blurber.followers_count ?? 0)}
               </strong>{" "}
-              {blurber.followers_count === 1 ? "orbit" : "orbits"}
+              {blurber.followers_count === 1 ? "orbiter" : "orbiters"}
             </span>
           </div>
           {blurber.following_count !== undefined && blurber.following_count > 0 && (
-            <span>
+            <span className="hidden sm:inline">
               <strong className="font-semibold text-foreground">
                 {compactCount(blurber.following_count)}
               </strong>{" "}

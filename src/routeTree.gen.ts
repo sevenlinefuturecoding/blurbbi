@@ -17,6 +17,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as AuthenticatedOnboardedRouteRouteImport } from './routes/_authenticated/_onboarded/route'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as DropIdRouteImport } from './routes/drop.$id'
+import { Route as TTagRouteImport } from './routes/t.$tag'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as AuthenticatedOnboardedNotificationsRouteImport } from './routes/_authenticated/_onboarded/notifications'
 import { Route as AuthenticatedOnboardedSettingsRouteImport } from './routes/_authenticated/_onboarded/settings'
@@ -60,6 +61,11 @@ const DropIdRoute = DropIdRouteImport.update({
   path: '/drop/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TTagRoute = TTagRouteImport.update({
+  id: '/t/$tag',
+  path: '/t/$tag',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
   path: '/u/$username',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/drop/$id': typeof DropIdRoute
+  '/t/$tag': typeof TTagRoute
   '/u/$username': typeof UUsernameRoute
   '/notifications': typeof AuthenticatedOnboardedNotificationsRoute
   '/settings': typeof AuthenticatedOnboardedSettingsRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/drop/$id': typeof DropIdRoute
+  '/t/$tag': typeof TTagRoute
   '/u/$username': typeof UUsernameRoute
   '/notifications': typeof AuthenticatedOnboardedNotificationsRoute
   '/settings': typeof AuthenticatedOnboardedSettingsRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/_authenticated/_onboarded': typeof AuthenticatedOnboardedRouteRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/drop/$id': typeof DropIdRoute
+  '/t/$tag': typeof TTagRoute
   '/u/$username': typeof UUsernameRoute
   '/_authenticated/_onboarded/notifications': typeof AuthenticatedOnboardedNotificationsRoute
   '/_authenticated/_onboarded/settings': typeof AuthenticatedOnboardedSettingsRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/onboarding'
     | '/drop/$id'
+    | '/t/$tag'
     | '/u/$username'
     | '/notifications'
     | '/settings'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/onboarding'
     | '/drop/$id'
+    | '/t/$tag'
     | '/u/$username'
     | '/notifications'
     | '/settings'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_onboarded'
     | '/_authenticated/onboarding'
     | '/drop/$id'
+    | '/t/$tag'
     | '/u/$username'
     | '/_authenticated/_onboarded/notifications'
     | '/_authenticated/_onboarded/settings'
@@ -159,6 +171,7 @@ export interface RootRouteChildren {
   HallRoute: typeof HallRoute
   SearchRoute: typeof SearchRoute
   DropIdRoute: typeof DropIdRoute
+  TTagRoute: typeof TTagRoute
   UUsernameRoute: typeof UUsernameRoute
 }
 
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       path: '/drop/$id'
       fullPath: '/drop/$id'
       preLoaderRoute: typeof DropIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/t/$tag': {
+      id: '/t/$tag'
+      path: '/t/$tag'
+      fullPath: '/t/$tag'
+      preLoaderRoute: typeof TTagRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/u/$username': {
@@ -282,6 +302,7 @@ const rootRouteChildren: RootRouteChildren = {
   HallRoute: HallRoute,
   SearchRoute: SearchRoute,
   DropIdRoute: DropIdRoute,
+  TTagRoute: TTagRoute,
   UUsernameRoute: UUsernameRoute,
 }
 export const routeTree = rootRouteImport

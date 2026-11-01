@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { EmojiPickerPopover } from "./emoji-picker";
 import { MAX_DROP_LENGTH } from "@/lib/blurbi";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyMentions } from "@/lib/mentions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Loader2, Sparkles } from "lucide-react";
@@ -15,17 +16,19 @@ import { Loader2, Sparkles } from "lucide-react";
 export function Composer({
   userId,
   placeholder = "What's dropping?…",
+  initialContent = "",
   autoFocus = false,
   onPosted,
   compact = false,
 }: {
   userId: string;
   placeholder?: string;
+  initialContent?: string;
   autoFocus?: boolean;
   onPosted?: () => void;
   compact?: boolean;
 }) {
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialContent);
   const [busy, setBusy] = useState(false);
   const [isFocused, setIsFocused] = useState(autoFocus);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -56,9 +59,12 @@ export function Composer({
     if (!canPost) return;
     setBusy(true);
     try {
-      const { error } = await supabase
+      const content = text.trim();
+      const { data: newDrop, error } = await supabase
         .from("drops")
-        .insert({ user_id: userId, content: text.trim() });
+        .insert({ user_id: userId, content })
+        .select("id")
+        .single();
       if (error) {
         toast.error(
           error.message.includes("drops_length")
@@ -70,6 +76,9 @@ export function Composer({
       setText("");
       setIsFocused(false);
       toast.success("Drop released into the Stream 🌊");
+      if (newDrop?.id) {
+        notifyMentions(newDrop.id, content, userId);
+      }
       onPosted?.();
     } finally {
       setBusy(false);

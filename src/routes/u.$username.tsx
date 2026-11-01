@@ -25,6 +25,7 @@ import { useMyProfile } from "@/hooks/use-my-profile";
 import { useEngagement } from "@/hooks/use-engagement";
 import { DropCard } from "@/components/blurbi/drop-card";
 import { BlurbiAvatar } from "@/components/blurbi/blurbi-avatar";
+import { FormattedContent } from "@/components/blurbi/formatted-content";
 import { Composer } from "@/components/blurbi/composer";
 import { EditProfileDialog } from "@/components/blurbi/edit-profile-dialog";
 import { OrbitersDialog } from "@/components/blurbi/orbiters-dialog";
@@ -750,11 +751,14 @@ function ProfilePage() {
                       )}
 
                       {/* Echo content */}
-                      <Link to="/drop/$id" params={{ id: echo.drop_id }} className="block">
+                      <div
+                        onClick={() => navigate({ to: "/drop/$id", params: { id: echo.drop_id } })}
+                        className="cursor-pointer"
+                      >
                         <p className="mt-2 text-[14.5px] leading-relaxed text-foreground whitespace-pre-wrap break-words">
-                          {echo.content}
+                          <FormattedContent content={echo.content} />
                         </p>
-                      </Link>
+                      </div>
                     </div>
                   </div>
                 </article>
