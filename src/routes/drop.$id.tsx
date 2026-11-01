@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyProfile } from "@/hooks/use-my-profile";
@@ -46,6 +46,7 @@ function DropDetail() {
   const drop = useQuery({
     queryKey: ["drop", id, me?.id],
     enabled: true,
+    refetchInterval: 15000,
     queryFn: async (): Promise<FeedDrop | null> => {
       try {
         const { data, error } = await supabase.rpc(
@@ -68,6 +69,7 @@ function DropDetail() {
   const echoes = useQuery({
     queryKey: ["echoes", id],
     enabled: true,
+    refetchInterval: 10000,
     queryFn: async (): Promise<EchoRow[]> => {
       try {
         const { data, error } = await supabase
@@ -88,6 +90,49 @@ function DropDetail() {
       }
     },
   });
+
+  // Realtime subscription for echoes on this drop
+  useEffect(() => {
+    if (!id || typeof window === "undefined") return;
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase
+        .channel(`blurbbi:drop:${id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "echoes",
+            filter: `drop_id=eq.${id}`,
+          },
+          () => {
+            qc.invalidateQueries({ queryKey: ["echoes", id] });
+            qc.invalidateQueries({ queryKey: ["drop", id] });
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "drops",
+            filter: `id=eq.${id}`,
+          },
+          () => {
+            qc.invalidateQueries({ queryKey: ["drop", id] });
+          },
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn("Realtime drop channel error:", e);
+    }
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [id, qc]);
 
   const engagement = useEngagement(id ? [id] : [], me?.id);
 

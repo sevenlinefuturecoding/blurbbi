@@ -11,6 +11,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeSync } from "@/hooks/use-realtime-sync";
 
 import appCss from "../styles.css?url";
 
@@ -144,6 +145,11 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function RealtimeListener() {
+  useRealtimeSync();
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
@@ -180,6 +186,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <RealtimeListener />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster position="top-center" />

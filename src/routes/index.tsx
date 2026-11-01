@@ -56,25 +56,30 @@ function Home() {
   const viral = useQuery({
     queryKey: ["drops", "viral"],
     queryFn: () => callFeed("viral_now", { p_limit: 5 }),
+    refetchInterval: 30000,
   });
   const everyone = useQuery({
     queryKey: ["drops", "everyone"],
     queryFn: () => callFeed("feed_global", { p_limit: 30 }),
+    refetchInterval: 20000,
   });
   const forYou = useQuery({
     queryKey: ["drops", "for-you", me?.id],
     enabled: !!me,
     queryFn: () => callFeed("feed_for_you", { p_viewer: me!.id, p_limit: 30 }),
+    refetchInterval: 25000,
   });
   const recs = useQuery({
     queryKey: ["drops", "recs", me?.id],
     enabled: !!me,
     queryFn: () => callFeed("recommend_drops", { p_viewer: me!.id, p_limit: 10 }),
+    refetchInterval: 45000,
   });
   const orbit = useQuery({
     queryKey: ["drops", "orbit", me?.id],
     enabled: !!me,
     queryFn: () => callFeed("feed_orbit", { p_viewer: me!.id, p_limit: 30 }),
+    refetchInterval: 25000,
   });
 
   const active = tab === "everyone" ? everyone : tab === "foryou" ? forYou : orbit;
