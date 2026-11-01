@@ -18,6 +18,12 @@ export type Database = {
           relay_count: number;
           spark_count: number;
           user_id: string;
+          is_pinned?: boolean | null;
+          is_hidden?: boolean | null;
+          moderation_status?: string | null;
+          moderation_reason?: string | null;
+          moderated_by?: string | null;
+          moderated_at?: string | null;
         };
         Insert: {
           content: string;
@@ -28,6 +34,12 @@ export type Database = {
           relay_count?: number;
           spark_count?: number;
           user_id: string;
+          is_pinned?: boolean | null;
+          is_hidden?: boolean | null;
+          moderation_status?: string | null;
+          moderation_reason?: string | null;
+          moderated_by?: string | null;
+          moderated_at?: string | null;
         };
         Update: {
           content?: string;
@@ -38,6 +50,12 @@ export type Database = {
           relay_count?: number;
           spark_count?: number;
           user_id?: string;
+          is_pinned?: boolean | null;
+          is_hidden?: boolean | null;
+          moderation_status?: string | null;
+          moderation_reason?: string | null;
+          moderated_by?: string | null;
+          moderated_at?: string | null;
         };
         Relationships: [
           {
@@ -291,6 +309,10 @@ export type Database = {
           is_verified?: boolean | null;
           is_admin?: boolean | null;
           is_suspended?: boolean | null;
+          account_status?: string | null;
+          suspended_until?: string | null;
+          ban_reason?: string | null;
+          warning_count?: number | null;
         };
         Insert: {
           avatar_color?: string;
@@ -310,6 +332,10 @@ export type Database = {
           is_verified?: boolean | null;
           is_admin?: boolean | null;
           is_suspended?: boolean | null;
+          account_status?: string | null;
+          suspended_until?: string | null;
+          ban_reason?: string | null;
+          warning_count?: number | null;
         };
         Update: {
           avatar_color?: string;
@@ -329,6 +355,10 @@ export type Database = {
           is_verified?: boolean | null;
           is_admin?: boolean | null;
           is_suspended?: boolean | null;
+          account_status?: string | null;
+          suspended_until?: string | null;
+          ban_reason?: string | null;
+          warning_count?: number | null;
         };
         Relationships: [];
       };
@@ -374,6 +404,9 @@ export type Database = {
           reason: string;
           reporter_id: string;
           status: string;
+          category?: string | null;
+          assigned_to?: string | null;
+          internal_notes?: string | null;
           resolved_by?: string | null;
           resolved_at?: string | null;
           resolution_action?: string | null;
@@ -386,6 +419,9 @@ export type Database = {
           reason: string;
           reporter_id: string;
           status?: string;
+          category?: string | null;
+          assigned_to?: string | null;
+          internal_notes?: string | null;
           resolved_by?: string | null;
           resolved_at?: string | null;
           resolution_action?: string | null;
@@ -398,6 +434,9 @@ export type Database = {
           reason?: string;
           reporter_id?: string;
           status?: string;
+          category?: string | null;
+          assigned_to?: string | null;
+          internal_notes?: string | null;
           resolved_by?: string | null;
           resolved_at?: string | null;
           resolution_action?: string | null;
@@ -569,6 +608,273 @@ export type Database = {
           viewer_id?: string | null;
           experiment_variant?: string | null;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      admin_roles: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          description?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          description?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      admin_permissions: {
+        Row: {
+          id: string;
+          name: string;
+          module: string;
+          description: string | null;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          module: string;
+          description?: string | null;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          module?: string;
+          description?: string | null;
+        };
+        Relationships: [];
+      };
+      admin_role_permissions: {
+        Row: {
+          role_id: string;
+          permission_id: string;
+        };
+        Insert: {
+          role_id: string;
+          permission_id: string;
+        };
+        Update: {
+          role_id?: string;
+          permission_id?: string;
+        };
+        Relationships: [];
+      };
+      admin_user_roles: {
+        Row: {
+          id: string;
+          user_id: string;
+          role_id: string;
+          assigned_by: string | null;
+          assigned_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          role_id: string;
+          assigned_by?: string | null;
+          assigned_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          role_id?: string;
+          assigned_by?: string | null;
+          assigned_at?: string;
+        };
+        Relationships: [];
+      };
+      user_restrictions: {
+        Row: {
+          id: string;
+          user_id: string;
+          admin_id: string;
+          type: "warning" | "suspension" | "ban";
+          reason: string;
+          internal_notes: string | null;
+          expires_at: string | null;
+          is_active: boolean;
+          revoked_at: string | null;
+          revoked_by: string | null;
+          revocation_reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          admin_id: string;
+          type: "warning" | "suspension" | "ban";
+          reason: string;
+          internal_notes?: string | null;
+          expires_at?: string | null;
+          is_active?: boolean;
+          revoked_at?: string | null;
+          revoked_by?: string | null;
+          revocation_reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          admin_id?: string;
+          type?: "warning" | "suspension" | "ban";
+          reason?: string;
+          internal_notes?: string | null;
+          expires_at?: string | null;
+          is_active?: boolean;
+          revoked_at?: string | null;
+          revoked_by?: string | null;
+          revocation_reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      admin_audit_logs: {
+        Row: {
+          id: string;
+          admin_id: string;
+          action_type: string;
+          target_type:
+            "user" | "drop" | "report" | "setting" | "feature_flag" | "role" | "announcement";
+          target_id: string;
+          previous_state: Json | null;
+          new_state: Json | null;
+          reason: string | null;
+          metadata: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          admin_id: string;
+          action_type: string;
+          target_type:
+            "user" | "drop" | "report" | "setting" | "feature_flag" | "role" | "announcement";
+          target_id: string;
+          previous_state?: Json | null;
+          new_state?: Json | null;
+          reason?: string | null;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          admin_id?: string;
+          action_type?: string;
+          target_type?:
+            "user" | "drop" | "report" | "setting" | "feature_flag" | "role" | "announcement";
+          target_id?: string;
+          previous_state?: Json | null;
+          new_state?: Json | null;
+          reason?: string | null;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      platform_announcements: {
+        Row: {
+          id: string;
+          title: string;
+          content: string;
+          type: "general" | "feature_update" | "maintenance" | "important";
+          audience: "all" | "verified" | "new_users";
+          status: "draft" | "scheduled" | "published" | "archived";
+          scheduled_for: string | null;
+          published_at: string | null;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          content: string;
+          type?: "general" | "feature_update" | "maintenance" | "important";
+          audience?: "all" | "verified" | "new_users";
+          status?: "draft" | "scheduled" | "published" | "archived";
+          scheduled_for?: string | null;
+          published_at?: string | null;
+          created_by: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          content?: string;
+          type?: "general" | "feature_update" | "maintenance" | "important";
+          audience?: "all" | "verified" | "new_users";
+          status?: "draft" | "scheduled" | "published" | "archived";
+          scheduled_for?: string | null;
+          published_at?: string | null;
+          created_by?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      platform_feature_flags: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          category: string;
+          is_enabled: boolean;
+          rollout_pct: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          description?: string | null;
+          category?: string;
+          is_enabled?: boolean;
+          rollout_pct?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          description?: string | null;
+          category?: string;
+          is_enabled?: boolean;
+          rollout_pct?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      platform_settings: {
+        Row: {
+          key: string;
+          value: Json;
+          description: string | null;
+          category: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          key: string;
+          value: Json;
+          description?: string | null;
+          category?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          key?: string;
+          value?: Json;
+          description?: string | null;
+          category?: string;
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Relationships: [];
       };
