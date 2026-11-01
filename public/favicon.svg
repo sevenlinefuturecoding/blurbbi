@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="blurbi-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B4A"/>
+      <stop offset="100%" stop-color="#E03E1A"/>
+    </linearGradient>
+  </defs>
+  <!-- Squircle Background -->
+  <rect width="64" height="64" rx="16" fill="url(#blurbi-grad)"/>
+  
+  <!-- Stylized Blurbii "b" / text drop swirl -->
+  <path d="M22 16 C22 14.895 22.895 14 24 14 C25.105 14 26 14.895 26 16 L26 31 C28.2 28.5 31.4 27 35 27 C42.18 27 48 32.82 48 40 C48 47.18 42.18 53 35 53 C27.82 53 22 47.18 22 40 Z M26 40 C26 44.97 30.03 49 35 49 C39.97 49 44 44.97 44 40 C44 35.03 39.97 31 35 31 C30.03 31 26 35.03 26 40 Z" fill="#FFFFFF"/>
+  <circle cx="35" cy="40" r="4.5" fill="#FFFFFF"/>
+</svg>
+
