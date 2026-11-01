@@ -198,7 +198,7 @@ export function EditProfileDialog({
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Your Name"
-              className="h-10 text-[15px] sm:text-sm rounded-xl bg-background"
+              className="h-10 text-base sm:text-sm rounded-xl bg-background"
               maxLength={40}
             />
           </div>
@@ -225,7 +225,7 @@ export function EditProfileDialog({
                   setUsernameError(null);
                 }}
                 onBlur={() => checkUsername(username.toLowerCase())}
-                className="h-10 text-[15px] sm:text-sm rounded-xl bg-background pl-7"
+                className="h-10 text-base sm:text-sm rounded-xl bg-background pl-7"
                 maxLength={20}
               />
             </div>
@@ -256,7 +256,7 @@ export function EditProfileDialog({
               value={bio}
               onChange={(e) => setBio(e.target.value.slice(0, 160))}
               placeholder="Tell blurbers about yourself…"
-              className="min-h-[76px] w-full resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-[15px] sm:text-sm leading-relaxed outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
+              className="min-h-[76px] w-full resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-base sm:text-sm leading-relaxed outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
               maxLength={160}
             />
           </div>
@@ -274,7 +274,7 @@ export function EditProfileDialog({
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               placeholder="https://yourwebsite.com"
-              className="h-10 text-[15px] sm:text-sm rounded-xl bg-background"
+              className="h-10 text-base sm:text-sm rounded-xl bg-background"
               maxLength={100}
             />
           </div>
@@ -292,7 +292,7 @@ export function EditProfileDialog({
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="City, Country"
-              className="h-10 text-[15px] sm:text-sm rounded-xl bg-background"
+              className="h-10 text-base sm:text-sm rounded-xl bg-background"
               maxLength={50}
             />
           </div>

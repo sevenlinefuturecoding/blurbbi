@@ -151,7 +151,7 @@ function DropDetail() {
             onChange={(e) => setEchoText(e.target.value.slice(0, MAX_DROP_LENGTH))}
             placeholder="Echo back…"
             rows={2}
-            className="w-full resize-none bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
+            className="w-full resize-none bg-transparent text-base sm:text-[15px] outline-none placeholder:text-muted-foreground"
           />
           <div className="mt-2 flex items-center justify-between">
             <EmojiPickerPopover onPick={insertEmoji} />

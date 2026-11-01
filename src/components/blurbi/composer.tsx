@@ -106,7 +106,7 @@ export function Composer({
         autoFocus={autoFocus}
         rows={isExpanded ? (compact ? 2 : 3) : 1}
         className={cn(
-          "w-full resize-none bg-transparent text-[14.5px] leading-relaxed outline-none placeholder:text-muted-foreground transition-all duration-200",
+          "w-full resize-none bg-transparent text-base sm:text-[14.5px] leading-relaxed outline-none placeholder:text-muted-foreground transition-all duration-200",
           isExpanded ? "min-h-[72px]" : "min-h-[38px] pt-1",
         )}
         maxLength={MAX_DROP_LENGTH}

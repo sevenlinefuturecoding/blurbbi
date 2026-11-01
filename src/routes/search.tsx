@@ -124,7 +124,7 @@ function SearchPage() {
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
               placeholder="Search drops, @username, or keywords…"
-              className="h-12 w-full rounded-full border border-border bg-card pl-11 pr-10 text-sm text-foreground shadow-sm transition-colors outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-1 focus:ring-ring"
+              className="h-12 w-full rounded-full border border-border bg-card pl-11 pr-10 text-base sm:text-sm text-foreground shadow-sm transition-colors outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-1 focus:ring-ring"
               autoFocus={!hasQuery}
             />
             {inputVal && (

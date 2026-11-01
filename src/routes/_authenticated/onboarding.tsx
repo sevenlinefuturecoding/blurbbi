@@ -201,7 +201,7 @@ function OnboardingPage() {
             placeholder="A sentence about you (200 characters)"
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            className="min-h-20 w-full resize-none rounded-2xl border border-input bg-card px-4 py-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-h-20 w-full resize-none rounded-2xl border border-input bg-card px-4 py-3 text-base sm:text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             maxLength={200}
           />
         </div>

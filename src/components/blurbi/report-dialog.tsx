@@ -87,7 +87,7 @@ export function ReportDialog({
             placeholder="Anything else we should know? (optional)"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="min-h-16 w-full resize-none rounded-2xl border border-input bg-card px-4 py-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-h-16 w-full resize-none rounded-2xl border border-input bg-card px-4 py-3 text-base sm:text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             maxLength={500}
           />
           <div className="flex items-center gap-2">
