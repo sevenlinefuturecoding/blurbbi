@@ -59,4 +59,3 @@ export function FormattedContent({ content, className }: FormattedContentProps) 
 
   return <span className={className}>{elements}</span>;
 }
-
