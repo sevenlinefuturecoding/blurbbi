@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AVATAR_COLOR_KEYS, avatarStyle, type Profile } from "@/lib/blurbi";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Globe, MapPin, Loader2 } from "lucide-react";
+import { Globe, MapPin, Loader2, X } from "lucide-react";
 
 export function EditProfileDialog({
   profile,
@@ -125,6 +119,7 @@ export function EditProfileDialog({
         qc.invalidateQueries({ queryKey: ["profile"] }),
         qc.invalidateQueries({ queryKey: ["me"] }),
         qc.invalidateQueries({ queryKey: ["profile-drops"] }),
+        qc.invalidateQueries({ queryKey: ["drops"] }),
       ]);
 
       toast.success("Profile updated ✨");
@@ -138,22 +133,34 @@ export function EditProfileDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-display text-xl font-bold">Edit Profile</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-md max-h-[88dvh] p-0 overflow-hidden rounded-3xl border border-border bg-card shadow-2xl flex flex-col">
+        {/* Sticky Mobile-Friendly Header */}
+        <div className="flex items-center justify-between border-b border-border/60 bg-card/95 px-5 py-3.5 backdrop-blur-md">
+          <DialogTitle className="font-display text-lg font-bold text-foreground">
+            Edit Profile
+          </DialogTitle>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-        <div className="space-y-4 py-1">
-          {/* Avatar preview & color switcher */}
-          <div className="flex items-center gap-4 rounded-2xl bg-secondary/40 p-3 border border-border/50">
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 overscroll-contain">
+          {/* Avatar theme & preview */}
+          <div className="rounded-2xl border border-border/60 bg-secondary/30 p-3 sm:p-3.5 flex items-center gap-3.5">
             <div
-              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-3xl shadow-sm transition-transform hover:scale-105"
+              className="flex h-16 w-16 shrink-0 select-none items-center justify-center rounded-2xl text-3xl shadow-sm transition-transform active:scale-95"
               style={avatarStyle(color)}
             >
               {emoji}
             </div>
-            <div className="flex-1">
-              <span className="text-xs font-semibold text-muted-foreground block mb-1.5">
+            <div className="min-w-0 flex-1">
+              <span className="text-xs font-semibold text-muted-foreground block mb-2">
                 Avatar Theme Color
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -175,15 +182,15 @@ export function EditProfileDialog({
             </div>
           </div>
 
-          {/* Emoji selector grid */}
-          <div className="space-y-1">
-            <Label className="text-xs font-semibold text-muted-foreground">Choose Emoji</Label>
+          {/* Emoji Picker */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-muted-foreground">Avatar Emoji</Label>
             <EmojiPickerGrid value={emoji} onChange={setEmoji} />
           </div>
 
           {/* Display Name */}
           <div className="space-y-1.5">
-            <Label htmlFor="edit-display" className="text-xs font-semibold">
+            <Label htmlFor="edit-display" className="text-xs font-semibold text-foreground">
               Display Name
             </Label>
             <Input
@@ -191,7 +198,7 @@ export function EditProfileDialog({
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Your Name"
-              className="rounded-xl bg-card"
+              className="h-10 text-[15px] sm:text-sm rounded-xl bg-background"
               maxLength={40}
             />
           </div>
@@ -199,7 +206,7 @@ export function EditProfileDialog({
           {/* Username */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="edit-username" className="text-xs font-semibold">
+              <Label htmlFor="edit-username" className="text-xs font-semibold text-foreground">
                 Username
               </Label>
               <span className="text-[11px] text-muted-foreground">
@@ -207,7 +214,9 @@ export function EditProfileDialog({
               </span>
             </div>
             <div className="relative flex items-center">
-              <span className="absolute left-3 text-xs text-muted-foreground select-none">@</span>
+              <span className="absolute left-3 text-xs font-medium text-muted-foreground select-none">
+                @
+              </span>
               <Input
                 id="edit-username"
                 value={username}
@@ -216,7 +225,7 @@ export function EditProfileDialog({
                   setUsernameError(null);
                 }}
                 onBlur={() => checkUsername(username.toLowerCase())}
-                className="rounded-xl bg-card pl-7"
+                className="h-10 text-[15px] sm:text-sm rounded-xl bg-background pl-7"
                 maxLength={20}
               />
             </div>
@@ -226,7 +235,7 @@ export function EditProfileDialog({
           {/* Bio (160 characters limit) */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="edit-bio" className="text-xs font-semibold">
+              <Label htmlFor="edit-bio" className="text-xs font-semibold text-foreground">
                 Bio
               </Label>
               <span
@@ -239,7 +248,7 @@ export function EditProfileDialog({
                       : "text-muted-foreground",
                 )}
               >
-                {remainingBio} chars left
+                {remainingBio} left
               </span>
             </div>
             <textarea
@@ -247,16 +256,16 @@ export function EditProfileDialog({
               value={bio}
               onChange={(e) => setBio(e.target.value.slice(0, 160))}
               placeholder="Tell blurbers about yourself…"
-              className="min-h-[76px] w-full resize-none rounded-xl border border-input bg-card px-3.5 py-2.5 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
+              className="min-h-[76px] w-full resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-[15px] sm:text-sm leading-relaxed outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
               maxLength={160}
             />
           </div>
 
-          {/* Website Link */}
+          {/* Website */}
           <div className="space-y-1.5">
             <Label
               htmlFor="edit-website"
-              className="text-xs font-semibold flex items-center gap-1.5"
+              className="text-xs font-semibold flex items-center gap-1.5 text-foreground"
             >
               <Globe className="h-3.5 w-3.5 text-muted-foreground" /> Website
             </Label>
@@ -265,7 +274,7 @@ export function EditProfileDialog({
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               placeholder="https://yourwebsite.com"
-              className="rounded-xl bg-card"
+              className="h-10 text-[15px] sm:text-sm rounded-xl bg-background"
               maxLength={100}
             />
           </div>
@@ -274,7 +283,7 @@ export function EditProfileDialog({
           <div className="space-y-1.5">
             <Label
               htmlFor="edit-location"
-              className="text-xs font-semibold flex items-center gap-1.5"
+              className="text-xs font-semibold flex items-center gap-1.5 text-foreground"
             >
               <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> Location
             </Label>
@@ -282,37 +291,42 @@ export function EditProfileDialog({
               id="edit-location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="City, Country or Orbit"
-              className="rounded-xl bg-card"
+              placeholder="City, Country"
+              className="h-10 text-[15px] sm:text-sm rounded-xl bg-background"
               maxLength={50}
             />
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0 pt-2">
+        {/* Sticky Mobile-Friendly Footer */}
+        <div className="border-t border-border/60 bg-card/95 px-5 py-3 flex items-center justify-end gap-2 backdrop-blur-md pb-safe">
           <Button
+            type="button"
             variant="ghost"
-            className="rounded-full"
+            size="sm"
+            className="rounded-full px-4 text-xs font-medium"
             disabled={busy}
             onClick={() => onOpenChange(false)}
           >
             Cancel
           </Button>
           <Button
-            className="rounded-full px-6 font-semibold"
+            type="button"
+            size="sm"
+            className="rounded-full px-6 text-xs font-semibold shadow-sm"
             disabled={busy || !usernameValid || !!usernameError}
             onClick={save}
           >
             {busy ? (
               <>
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 Saving…
               </>
             ) : (
               "Save Changes"
             )}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

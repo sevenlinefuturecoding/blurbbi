@@ -18,14 +18,17 @@ import {
   Sparkles,
   ArrowLeft,
   Flame,
+  Plus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyProfile } from "@/hooks/use-my-profile";
 import { useEngagement } from "@/hooks/use-engagement";
 import { DropCard } from "@/components/blurbi/drop-card";
 import { BlurbiAvatar } from "@/components/blurbi/blurbi-avatar";
+import { Composer } from "@/components/blurbi/composer";
 import { EditProfileDialog } from "@/components/blurbi/edit-profile-dialog";
 import { OrbitersDialog } from "@/components/blurbi/orbiters-dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -224,6 +227,7 @@ function ProfilePage() {
   const navigate = useNavigate();
 
   const [editOpen, setEditOpen] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
   const [orbitersOpen, setOrbitersOpen] = useState(false);
   const [orbitingOpen, setOrbitingOpen] = useState(false);
   const [tab, setTab] = useState<"drops" | "echoes" | "relays">("drops");
@@ -430,14 +434,24 @@ function ProfilePage() {
             {/* Profile Action Buttons */}
             <div className="flex items-center gap-1.5 pt-1">
               {isOwn ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full font-semibold px-4 shadow-sm transition-colors hover:bg-accent"
-                  onClick={() => setEditOpen(true)}
-                >
-                  Edit profile
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    className="rounded-full font-semibold px-3.5 shadow-sm transition-transform active:scale-95"
+                    onClick={() => setComposeOpen(true)}
+                  >
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    New Drop
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full font-semibold px-3.5 shadow-sm transition-colors hover:bg-accent"
+                    onClick={() => setEditOpen(true)}
+                  >
+                    Edit profile
+                  </Button>
+                </div>
               ) : (
                 <>
                   {orbiting && (
@@ -575,6 +589,21 @@ function ProfilePage() {
         </section>
       ) : (
         <div className="h-48 animate-pulse rounded-3xl bg-muted/60" />
+      )}
+
+      {/* Inline Post option for account owner */}
+      {isOwn && me && (
+        <section className="space-y-1.5">
+          <Composer
+            userId={me.id}
+            placeholder="Drop a thought to your profile & the Stream… 🌊"
+            onPosted={() => {
+              drops.refetch();
+              totalDrops.refetch();
+              qc.invalidateQueries({ queryKey: ["drops"] });
+            }}
+          />
+        </section>
       )}
 
       {/* Content Navigation Tabs */}
@@ -798,6 +827,27 @@ function ProfilePage() {
           viewerId={me?.id}
         />
       )}
+
+      {/* New Drop Dialog */}
+      <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+        <DialogContent className="rounded-3xl p-0">
+          <DialogTitle className="px-5 pt-5 text-lg font-semibold">New Drop</DialogTitle>
+          <div className="p-4">
+            {me && (
+              <Composer
+                userId={me.id}
+                autoFocus
+                onPosted={() => {
+                  setComposeOpen(false);
+                  drops.refetch();
+                  totalDrops.refetch();
+                  qc.invalidateQueries({ queryKey: ["drops"] });
+                }}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
