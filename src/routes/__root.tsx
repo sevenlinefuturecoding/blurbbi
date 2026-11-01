@@ -81,9 +81,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Blurbi" },
+      { title: "Blurbbi" },
       { name: "description", content: "A minimal stream of short text drops." },
-      { property: "og:title", content: "Blurbi" },
+      { property: "og:title", content: "Blurbbi" },
       { property: "og:description", content: "A minimal stream of short text drops." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -112,7 +112,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     scripts: [
       {
         // Apply the saved theme before first paint to avoid a flash.
-        children: `try{var t=localStorage.getItem("blurbi-theme");if(t==="dark"||(!t&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}`,
+        children: `try{var t=localStorage.getItem("blurbbi-theme")||localStorage.getItem("blurbi-theme");if(t==="dark"||(!t&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}`,
       },
     ],
   }),

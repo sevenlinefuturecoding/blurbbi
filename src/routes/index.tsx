@@ -15,13 +15,13 @@ import { timeAgo, type FeedDrop } from "@/lib/blurbi";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Blurbi — say it in a Drop" },
+      { title: "Blurbbi — say it in a Drop" },
       {
         name: "description",
         content:
           "The public Stream: every Drop from every blurber. Browse without an account, or sign in to Spark, Echo, Relay, and Orbit.",
       },
-      { property: "og:title", content: "Blurbi — say it in a Drop" },
+      { property: "og:title", content: "Blurbbi — say it in a Drop" },
       {
         property: "og:description",
         content: "A minimal social platform for short text and emoji posts.",

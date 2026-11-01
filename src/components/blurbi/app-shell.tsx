@@ -36,6 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     setDark(next);
     document.documentElement.classList.toggle("dark", next);
     try {
+      localStorage.setItem("blurbbi-theme", next ? "dark" : "light");
       localStorage.setItem("blurbi-theme", next ? "dark" : "light");
     } catch {
       /* ignore */
@@ -79,7 +80,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           to="/"
           className="mb-6 px-3 font-display text-2xl font-bold tracking-tight text-foreground"
         >
-          blurbi
+          blurbbi
         </Link>
         {navItems.map((item) => (
           <Link
@@ -142,7 +143,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Mobile top bar */}
       <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md md:hidden">
         <Link to="/" className="font-display text-xl font-bold tracking-tight">
-          blurbi
+          blurbbi
         </Link>
         <div className="flex items-center gap-1">
           <Link

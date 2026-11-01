@@ -16,10 +16,10 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/drop/$id")({
   head: () => ({
     meta: [
-      { title: "Drop · Blurbi" },
-      { name: "description", content: "A Drop and its Echoes on Blurbi." },
-      { property: "og:title", content: "Drop · Blurbi" },
-      { property: "og:description", content: "A Drop and its Echoes on Blurbi." },
+      { title: "Drop · Blurbbi" },
+      { name: "description", content: "A Drop and its Echoes on Blurbbi." },
+      { property: "og:title", content: "Drop · Blurbbi" },
+      { property: "og:description", content: "A Drop and its Echoes on Blurbbi." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

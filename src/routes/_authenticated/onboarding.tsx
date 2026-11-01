@@ -13,12 +13,12 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Set up your profile · Blurbi" },
-      { name: "description", content: "Pick your handle, name, bio, and emoji avatar on Blurbi." },
-      { property: "og:title", content: "Set up your profile · Blurbi" },
+      { title: "Set up your profile · Blurbbi" },
+      { name: "description", content: "Pick your handle, name, bio, and emoji avatar on Blurbbi." },
+      { property: "og:title", content: "Set up your profile · Blurbbi" },
       {
         property: "og:description",
-        content: "Pick your handle, name, bio, and emoji avatar on Blurbi.",
+        content: "Pick your handle, name, bio, and emoji avatar on Blurbbi.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -178,7 +178,7 @@ function OnboardingPage() {
                 ? "3–20 lowercase letters, numbers, or underscores"
                 : checking
                   ? "Checking…"
-                  : "blurbi.app/u/" + (username || "yourname"))}
+                  : "blurbbi.app/u/" + (username || "yourname"))}
           </p>
         </div>
 

@@ -11,10 +11,10 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sign in · Blurbi" },
-      { name: "description", content: "Sign in to Blurbi to drop, spark, and orbit." },
-      { property: "og:title", content: "Sign in · Blurbi" },
-      { property: "og:description", content: "Sign in to Blurbi to drop, spark, and orbit." },
+      { title: "Sign in · Blurbbi" },
+      { name: "description", content: "Sign in to Blurbbi to drop, spark, and orbit." },
+      { property: "og:title", content: "Sign in · Blurbbi" },
+      { property: "og:description", content: "Sign in to Blurbbi to drop, spark, and orbit." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -58,7 +58,7 @@ function AuthPage() {
         toast.info("Check your email to confirm your account.");
         return;
       }
-      toast.success("Welcome to Blurbi! Let's set up your profile.");
+      toast.success("Welcome to Blurbbi! Let's set up your profile.");
       navigate({ to: "/onboarding", replace: true });
     } finally {
       setBusy(false);
@@ -102,7 +102,7 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="font-display text-3xl font-bold tracking-tight">blurbi</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight">blurbbi</h1>
           <p className="mt-1 text-sm text-muted-foreground">Say it in a Drop.</p>
         </div>
 

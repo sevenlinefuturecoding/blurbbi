@@ -20,15 +20,15 @@ export const Route = createFileRoute("/search")({
   },
   head: () => ({
     meta: [
-      { title: "Search & Explore · Blurbi" },
+      { title: "Search & Explore · Blurbbi" },
       {
         name: "description",
-        content: "Search drops, discussions, and blurbers to orbit on Blurbi.",
+        content: "Search drops, discussions, and blurbers to orbit on Blurbbi.",
       },
-      { property: "og:title", content: "Search & Explore · Blurbi" },
+      { property: "og:title", content: "Search & Explore · Blurbbi" },
       {
         property: "og:description",
-        content: "Search drops, discussions, and blurbers to orbit on Blurbi.",
+        content: "Search drops, discussions, and blurbers to orbit on Blurbbi.",
       },
     ],
   }),

@@ -10,10 +10,10 @@ import { timeAgo } from "@/lib/blurbi";
 export const Route = createFileRoute("/_authenticated/_onboarded/notifications")({
   head: () => ({
     meta: [
-      { title: "Notifications · Blurbi" },
+      { title: "Notifications · Blurbbi" },
       {
         name: "description",
-        content: "Stay updated with your latest sparks, echoes, relays, and orbits on Blurbi.",
+        content: "Stay updated with your latest sparks, echoes, relays, and orbits on Blurbbi.",
       },
     ],
   }),

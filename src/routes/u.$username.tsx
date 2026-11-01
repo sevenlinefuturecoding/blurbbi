@@ -22,10 +22,10 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/u/$username")({
   head: ({ params }) => ({
     meta: [
-      { title: `@${params.username} · Blurbi` },
-      { name: "description", content: `@${params.username}'s Drops on Blurbi.` },
-      { property: "og:title", content: `@${params.username} · Blurbi` },
-      { property: "og:description", content: `@${params.username}'s Drops on Blurbi.` },
+      { title: `@${params.username} · Blurbbi` },
+      { name: "description", content: `@${params.username}'s Drops on Blurbbi.` },
+      { property: "og:title", content: `@${params.username} · Blurbbi` },
+      { property: "og:description", content: `@${params.username}'s Drops on Blurbbi.` },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

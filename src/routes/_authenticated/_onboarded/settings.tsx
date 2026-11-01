@@ -13,12 +13,12 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/_onboarded/settings")({
   head: () => ({
     meta: [
-      { title: "Settings · Blurbi" },
-      { name: "description", content: "Manage your Blurbi profile, mutes, and hidden drops." },
-      { property: "og:title", content: "Settings · Blurbi" },
+      { title: "Settings · Blurbbi" },
+      { name: "description", content: "Manage your Blurbbi profile, mutes, and hidden drops." },
+      { property: "og:title", content: "Settings · Blurbbi" },
       {
         property: "og:description",
-        content: "Manage your Blurbi profile, mutes, and hidden drops.",
+        content: "Manage your Blurbbi profile, mutes, and hidden drops.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

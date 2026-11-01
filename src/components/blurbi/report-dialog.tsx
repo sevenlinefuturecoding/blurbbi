@@ -47,7 +47,7 @@ export function ReportDialog({
     try {
       await reportDrop({ dropId, reporterId: viewerId, reason, note });
       if (alsoHide) await hideDrop(dropId, viewerId);
-      toast.success("Report sent. Thanks for keeping Blurbi kind.");
+      toast.success("Report sent. Thanks for keeping Blurbbi kind.");
       onOpenChange(false);
       setNote("");
       onDone?.();

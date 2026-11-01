@@ -11,12 +11,12 @@ import type { FeedDrop } from "@/lib/blurbi";
 export const Route = createFileRoute("/hall")({
   head: () => ({
     meta: [
-      { title: "Hall of Blurbs · Blurbi" },
+      { title: "Hall of Blurbs · Blurbbi" },
       {
         name: "description",
         content: "The top 50 Drops of the last 7 days, crowned by the crowd.",
       },
-      { property: "og:title", content: "Hall of Blurbs · Blurbi" },
+      { property: "og:title", content: "Hall of Blurbs · Blurbbi" },
       {
         property: "og:description",
         content: "The top 50 Drops of the last 7 days, crowned by the crowd.",
