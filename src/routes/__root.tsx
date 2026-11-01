@@ -83,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "viewport",
         content:
-          "width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover, interactive-widget=resizes-content",
+          "width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content",
       },
       { title: "Blurbbi" },
       { name: "description", content: "A minimal stream of short text drops." },
@@ -118,6 +118,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         // Apply the saved theme before first paint to avoid a flash.
         children: `try{var t=localStorage.getItem("blurbbi-theme")||localStorage.getItem("blurbi-theme");if(t==="dark"||(!t&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}`,
       },
+      {
+        // Lock mobile viewport against iOS gesture pinch & multi-touch zooming
+        children: `if(typeof window!=="undefined"){document.addEventListener("gesturestart",function(e){e.preventDefault()},false);document.addEventListener("gesturechange",function(e){e.preventDefault()},false);document.addEventListener("gestureend",function(e){e.preventDefault()},false);document.addEventListener("touchmove",function(e){if(e.touches&&e.touches.length>1){e.preventDefault()}},{passive:false})}`,
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -143,6 +147,27 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+
+  useEffect(() => {
+    const onGesture = (e: Event) => e.preventDefault();
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches && e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener("gesturestart", onGesture, false);
+    document.addEventListener("gesturechange", onGesture, false);
+    document.addEventListener("gestureend", onGesture, false);
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+
+    return () => {
+      document.removeEventListener("gesturestart", onGesture);
+      document.removeEventListener("gesturechange", onGesture);
+      document.removeEventListener("gestureend", onGesture);
+      document.removeEventListener("touchmove", onTouchMove);
+    };
+  }, []);
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
