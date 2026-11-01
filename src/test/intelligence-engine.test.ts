@@ -123,8 +123,8 @@ describe("Blurbbi Intelligence Engine: Comprehensive Test Suite", () => {
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
 
-      expect(sorted[0].id).toBe("drop-new-quiet");
-      expect(sorted[1].id).toBe("drop-old-viral");
+      expect(sorted[0]!.id).toBe("drop-new-quiet");
+      expect(sorted[1]!.id).toBe("drop-old-viral");
     });
 
     it("filters out drops from authors the viewer does not orbit", () => {
@@ -175,9 +175,9 @@ describe("Blurbbi Intelligence Engine: Comprehensive Test Suite", () => {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
 
-      expect(sorted[0].id).toBe("drop-high-score");
-      expect(sorted[1].id).toBe("drop-equal-score-older");
-      expect(sorted[2].id).toBe("drop-low-score");
+      expect(sorted[0]!.id).toBe("drop-high-score");
+      expect(sorted[1]!.id).toBe("drop-equal-score-older");
+      expect(sorted[2]!.id).toBe("drop-low-score");
     });
   });
 
@@ -207,7 +207,7 @@ describe("Blurbbi Intelligence Engine: Comprehensive Test Suite", () => {
 
       const trending = drops.filter((d) => !d.author_suspended);
       expect(trending).toHaveLength(1);
-      expect(trending[0].id).toBe("d1");
+      expect(trending[0]!.id).toBe("d1");
     });
   });
 
@@ -245,9 +245,9 @@ describe("Blurbbi Intelligence Engine: Comprehensive Test Suite", () => {
         return b.followers - a.followers;
       });
 
-      expect(ranked[0].id).toBe("c3"); // High sparks + highest followers
-      expect(ranked[1].id).toBe("c2"); // High sparks
-      expect(ranked[2].id).toBe("c1"); // Lower sparks
+      expect(ranked[0]!.id).toBe("c3"); // High sparks + highest followers
+      expect(ranked[1]!.id).toBe("c2"); // High sparks
+      expect(ranked[2]!.id).toBe("c1"); // Lower sparks
     });
   });
 
@@ -322,11 +322,11 @@ describe("Blurbbi Intelligence Engine: Comprehensive Test Suite", () => {
       const page1 = fetchPage(undefined, 2);
       expect(page1.map((d) => d.id)).toEqual(["d1", "d2"]);
 
-      const cursor1 = page1[page1.length - 1].created_at;
+      const cursor1 = page1[page1.length - 1]!.created_at;
       const page2 = fetchPage(cursor1, 2);
       expect(page2.map((d) => d.id)).toEqual(["d3", "d4"]);
 
-      const cursor2 = page2[page2.length - 1].created_at;
+      const cursor2 = page2[page2.length - 1]!.created_at;
       const page3 = fetchPage(cursor2, 2);
       expect(page3.map((d) => d.id)).toEqual(["d5"]);
 
