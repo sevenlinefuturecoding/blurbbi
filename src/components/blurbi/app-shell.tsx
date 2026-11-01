@@ -141,93 +141,73 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md md:hidden">
-        <Link to="/" className="font-display text-xl font-bold tracking-tight">
+      <header className="sticky top-0 z-40 flex h-13 items-center justify-between border-b border-border/70 bg-background/85 px-4 backdrop-blur-md md:hidden">
+        <Link to="/" className="font-display text-xl font-bold tracking-tight text-foreground">
           blurbbi
         </Link>
-        <div className="flex items-center gap-1">
-          <Link
-            to="/search"
-            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            aria-label="Search & Explore"
-          >
-            <Search className="h-5 w-5" />
-          </Link>
+        <div className="flex items-center gap-2">
           {!me ? (
             <Link
               to="/auth"
-              className="ml-1 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground"
+              className="rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs transition-opacity hover:opacity-90"
             >
               Sign in
             </Link>
-          ) : (
-            <>
-              <Link
-                to="/notifications"
-                className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                aria-label="Notifications"
-              >
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
-                )}
-              </Link>
-              <button
-                onClick={toggleTheme}
-                className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                aria-label="Toggle theme"
-              >
-                {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </button>
-            </>
-          )}
+          ) : null}
+          <button
+            onClick={toggleTheme}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            aria-label="Toggle theme"
+          >
+            {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-5 md:pl-[280px] md:pr-8 md:pb-10 md:pt-6">
+      <main className="mx-auto w-full max-w-2xl px-3 sm:px-4 pb-28 pt-3 sm:pt-5 md:pl-[280px] md:pr-8 md:pb-12 md:pt-6">
         {children}
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex items-center border-t border-border bg-background/95 px-1 pb-safe backdrop-blur-md md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex items-center border-t border-border/70 bg-background/90 px-1 pb-safe backdrop-blur-md md:hidden">
         <Link
           to="/"
-          className="flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-          activeProps={{ className: "text-primary" }}
+          className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+          activeProps={{ className: "text-primary font-semibold" }}
         >
-          <Home className="h-[22px] w-[22px]" />
+          <Home className="h-5 w-5" />
           Home
         </Link>
 
         <Link
           to="/search"
-          className="flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-          activeProps={{ className: "text-primary" }}
+          className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+          activeProps={{ className: "text-primary font-semibold" }}
         >
-          <Search className="h-[22px] w-[22px]" />
+          <Search className="h-5 w-5" />
           Search
         </Link>
 
-        <div className="flex flex-1 items-center justify-center py-1">
+        <div className="flex flex-1 items-center justify-center py-0.5">
           <button
             onClick={compose}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-all active:scale-90 hover:opacity-90"
-            aria-label="New Drop"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/25 transition-all active:scale-90 hover:scale-105"
+            aria-label="Create Drop"
           >
-            <Plus className="h-6 w-6" />
+            <Plus className="h-5 w-5" />
           </button>
         </div>
 
         {me ? (
           <Link
             to="/notifications"
-            className="relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-            activeProps={{ className: "text-primary" }}
+            className="relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            activeProps={{ className: "text-primary font-semibold" }}
           >
             <div className="relative">
-              <Bell className="h-[22px] w-[22px]" />
+              <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
+                <span className="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground ring-2 ring-background">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -237,10 +217,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         ) : (
           <Link
             to="/hall"
-            className="flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-            activeProps={{ className: "text-primary" }}
+            className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            activeProps={{ className: "text-primary font-semibold" }}
           >
-            <Trophy className="h-[22px] w-[22px]" />
+            <Trophy className="h-5 w-5" />
             Hall
           </Link>
         )}
@@ -249,18 +229,18 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link
             to="/u/$username"
             params={{ username: me.username }}
-            className="flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-            activeProps={{ className: "text-primary" }}
+            className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            activeProps={{ className: "text-primary font-semibold" }}
           >
-            <User className="h-[22px] w-[22px]" />
+            <User className="h-5 w-5" />
             Self
           </Link>
         ) : (
           <Link
             to="/auth"
-            className="flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            <LogIn className="h-[22px] w-[22px]" />
+            <LogIn className="h-5 w-5" />
             Sign in
           </Link>
         )}

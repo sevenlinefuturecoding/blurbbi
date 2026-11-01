@@ -10,7 +10,7 @@ import { Composer } from "@/components/blurbi/composer";
 import { DropCard } from "@/components/blurbi/drop-card";
 import { BlurbiAvatar } from "@/components/blurbi/blurbi-avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { timeAgo, type FeedDrop } from "@/lib/blurbi";
+import { timeAgo, compactCount, type FeedDrop } from "@/lib/blurbi";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -111,99 +111,139 @@ function Home() {
 
   return (
     <AppShell>
-      <div className="space-y-4">
-        <div className="px-1">
-          <h1 className="font-display text-2xl font-bold tracking-tight">Stream</h1>
-          {!me && (
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              Every Drop from every blurber — browse freely, sign in to interact.
-            </p>
-          )}
+      <div className="space-y-3.5 sm:space-y-4">
+        {/* Stream Header */}
+        <div className="flex items-baseline justify-between px-1">
+          <div>
+            <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              Stream
+            </h1>
+            {!me && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Public stream of short drops from the orbit.
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Blurbing Now strip */}
-        <section>
-          <div className="mb-2 flex items-center gap-1.5 px-1 text-sm font-semibold">
-            <Flame className="h-4 w-4 text-primary" />
-            Blurbing Now
+        {/* Blurbing Now compact carousel */}
+        <section className="space-y-1.5">
+          <div className="flex items-center gap-1.5 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <Flame className="h-3.5 w-3.5 text-primary fill-primary/20" />
+            <span>Blurbing Now</span>
           </div>
+
           {viral.isLoading ? (
-            <div className="flex gap-2 overflow-hidden px-1">
+            <div className="flex gap-2 overflow-hidden px-0.5">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-24 w-44 shrink-0 animate-pulse rounded-2xl bg-muted" />
+                <div key={i} className="h-20 w-48 shrink-0 animate-pulse rounded-2xl bg-muted/60" />
               ))}
             </div>
           ) : (viral.data?.length ?? 0) === 0 ? (
-            <p className="px-1 text-sm text-muted-foreground">
-              Nothing viral yet — be the spark! ✨
+            <p className="px-1 text-xs text-muted-foreground">
+              Nothing viral right now — be the spark! ✨
             </p>
           ) : (
-            <div className="no-scrollbar flex gap-2.5 overflow-x-auto px-1 pb-1">
+            <div className="no-scrollbar flex gap-2.5 overflow-x-auto px-0.5 pb-1 overscroll-x-contain">
               {viral.data!.map((d) => (
                 <Link
                   key={d.drop_id}
                   to="/drop/$id"
                   params={{ id: d.drop_id }}
-                  className="w-40 shrink-0 rounded-2xl border border-border bg-card p-3 text-left shadow-sm transition-colors hover:border-ring/50 sm:w-48"
+                  className="w-48 sm:w-56 shrink-0 rounded-2xl border border-border/70 bg-card/70 p-2.5 sm:p-3 text-left shadow-xs transition-all duration-150 hover:bg-card hover:border-primary/40 hover:shadow-sm"
                 >
                   <div className="flex items-center gap-2">
                     <BlurbiAvatar emoji={d.avatar_emoji} color={d.avatar_color} size="sm" />
-                    <span className="truncate text-xs font-medium">@{d.username}</span>
-                    <span className="ml-auto text-[10px] text-muted-foreground">
+                    <span className="truncate text-xs font-semibold text-foreground">
+                      @{d.username}
+                    </span>
+                    <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
                       {timeAgo(d.created_at)}
                     </span>
                   </div>
-                  <p className="mt-1.5 line-clamp-3 text-[13px] leading-snug">{d.content}</p>
+                  <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-foreground/85">
+                    {d.content}
+                  </p>
+                  {d.spark_count > 0 && (
+                    <div className="mt-1.5 flex items-center gap-1 text-[10px] font-medium text-primary">
+                      <Flame className="h-3 w-3 fill-current" />
+                      <span>{compactCount(d.spark_count)}</span>
+                    </div>
+                  )}
                 </Link>
               ))}
             </div>
           )}
         </section>
 
+        {/* Drop Composer / Guest Prompt */}
         {me ? (
           <Composer userId={me.id} onPosted={() => everyone.refetch()} />
         ) : (
           <Link
             to="/auth"
-            className="flex items-center justify-between rounded-3xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-sm transition-colors hover:border-ring/50"
+            className="flex items-center justify-between rounded-2xl border border-border/70 bg-card/80 p-3 sm:p-3.5 text-xs text-muted-foreground shadow-xs transition-all hover:bg-card hover:border-primary/40"
           >
-            <span>Say something in a Drop…</span>
-            <span className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
-              Sign in to post
+            <span>What's dropping? Join the stream…</span>
+            <span className="rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs">
+              Sign in
             </span>
           </Link>
         )}
 
+        {/* Feed Selector */}
         {me ? (
-          <Tabs value={tab} onValueChange={(v) => setTab(v as "everyone" | "foryou" | "orbit")}>
-            <TabsList className="grid h-10 w-full grid-cols-3 rounded-full">
-              <TabsTrigger value="everyone" className="rounded-full">
+          <Tabs
+            value={tab}
+            onValueChange={(v) => setTab(v as "everyone" | "foryou" | "orbit")}
+            className="w-full"
+          >
+            <TabsList className="grid h-9 w-full grid-cols-3 rounded-full bg-secondary/50 p-1 border border-border/40">
+              <TabsTrigger
+                value="everyone"
+                className="rounded-full text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs transition-all"
+              >
                 Everyone
               </TabsTrigger>
-              <TabsTrigger value="foryou" className="rounded-full">
+              <TabsTrigger
+                value="foryou"
+                className="rounded-full text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs transition-all"
+              >
                 For You
               </TabsTrigger>
-              <TabsTrigger value="orbit" className="rounded-full">
+              <TabsTrigger
+                value="orbit"
+                className="rounded-full text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs transition-all"
+              >
                 Orbit
               </TabsTrigger>
             </TabsList>
           </Tabs>
         ) : (
-          <p className="px-1 text-sm font-semibold text-muted-foreground">Everyone</p>
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Everyone
+            </span>
+            <span className="text-[11px] text-muted-foreground">Public Stream</span>
+          </div>
         )}
 
+        {/* Feed Stream Content */}
         {active.isLoading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 animate-pulse rounded-3xl bg-muted" />
+              <div key={i} className="h-32 animate-pulse rounded-2xl bg-muted/60" />
             ))}
           </div>
         ) : merged.length === 0 ? (
-          <div className="rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-2xl sm:rounded-3xl border border-border/70 bg-card/60 p-8 text-center text-sm text-muted-foreground shadow-xs">
             {tab === "orbit" ? (
               <>
-                Your Orbit is quiet. Find people in <b className="text-foreground">Everyone</b> and
-                start orbiting 🛰️
+                Your Orbit is quiet. Find people in <b className="text-foreground">Everyone</b> or{" "}
+                <Link to="/search" className="text-primary font-medium hover:underline">
+                  Search & Explore
+                </Link>{" "}
+                and start orbiting 🛰️
               </>
             ) : tab === "foryou" ? (
               <>Nothing here yet. Post a Drop and get things going 🌊</>
@@ -212,7 +252,7 @@ function Home() {
             ) : (
               <>
                 No Drops yet.{" "}
-                <Link to="/auth" className="font-medium text-primary hover:underline">
+                <Link to="/auth" className="font-semibold text-primary hover:underline">
                   Sign in
                 </Link>{" "}
                 and post the first one — the Stream is waiting 🌊
@@ -220,14 +260,13 @@ function Home() {
             )}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2.5 sm:space-y-3">
             {merged.map((d, i) => (
               <DropCard
                 key={`${d.drop_id}-${i}`}
                 drop={d}
                 viewerId={me?.id}
                 engagement={engagement}
-                className={i > 0 ? "" : undefined}
               />
             ))}
           </div>

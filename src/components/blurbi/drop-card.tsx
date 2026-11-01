@@ -141,47 +141,48 @@ export function DropCard({
   return (
     <motion.article
       layout
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: "easeOut" }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn(
-        "rounded-3xl border border-border bg-card p-4 shadow-sm transition-all hover:border-ring/50 hover:shadow-md sm:p-5",
-        isPinned && "border-primary/40 bg-card shadow-sm",
+        "rounded-2xl sm:rounded-3xl border border-border/70 bg-card/90 p-3.5 sm:p-4.5 shadow-xs transition-all duration-150",
+        "hover:border-border hover:bg-card hover:shadow-sm",
+        isPinned && "border-primary/40 bg-card/95",
         className,
       )}
     >
       {relayedBy && (
-        <div className="mb-2.5 flex items-center gap-1.5 pl-1 text-xs font-medium text-muted-foreground">
+        <div className="mb-2 flex items-center gap-1.5 pl-1 text-xs font-medium text-muted-foreground">
           <Repeat2 className="h-3.5 w-3.5 text-chart-2" />
           <span>Relayed by @{relayedBy}</span>
         </div>
       )}
       {isPinned && (
-        <div className="mb-2.5 flex items-center gap-1.5 pl-1 text-xs font-semibold text-primary">
+        <div className="mb-2 flex items-center gap-1.5 pl-1 text-xs font-semibold text-primary">
           <Pin className="h-3.5 w-3.5 fill-current" />
           <span>Pinned Drop</span>
         </div>
       )}
       <div className="flex items-start gap-3">
-        <Link to="/u/$username" params={{ username: drop.username }} className="shrink-0">
-          <BlurbiAvatar emoji={drop.avatar_emoji} color={drop.avatar_color} />
+        <Link to="/u/$username" params={{ username: drop.username }} className="shrink-0 pt-0.5">
+          <BlurbiAvatar emoji={drop.avatar_emoji} color={drop.avatar_color} size="md" />
         </Link>
         <div className="min-w-0 flex-1">
           {/* Header row: author + meta on one line, menu on right */}
-          <div className="flex items-start gap-1">
+          <div className="flex items-center justify-between gap-1">
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm">
                 <Link
                   to="/u/$username"
                   params={{ username: drop.username }}
-                  className="max-w-[120px] truncate font-semibold hover:underline sm:max-w-none"
+                  className="truncate font-semibold text-foreground hover:underline"
                 >
                   {drop.display_name || drop.username}
                 </Link>
-                <span className="hidden truncate text-muted-foreground sm:inline">
+                <span className="hidden truncate text-xs text-muted-foreground sm:inline">
                   @{drop.username}
                 </span>
-                <span className="shrink-0 text-muted-foreground">·</span>
+                <span className="shrink-0 text-xs text-muted-foreground">·</span>
                 <Link
                   to="/drop/$id"
                   params={{ id: drop.drop_id }}
@@ -190,7 +191,7 @@ export function DropCard({
                   {timeAgo(drop.created_at)}
                 </Link>
                 {rank !== undefined && (
-                  <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
+                  <span className="shrink-0 rounded-full bg-accent/80 px-2 py-0.2 text-[11px] font-semibold text-accent-foreground">
                     #{rank}
                   </span>
                 )}
@@ -239,41 +240,41 @@ export function DropCard({
           </div>
 
           <Link to="/drop/$id" params={{ id: drop.drop_id }} className="block">
-            <p className="mt-1.5 whitespace-pre-wrap break-words text-[15px] leading-relaxed">
+            <p className="mt-1.5 whitespace-pre-wrap break-words text-[14.5px] leading-relaxed text-foreground/90">
               {drop.content}
             </p>
           </Link>
 
           {/* Actions: touch-friendly, evenly spaced */}
-          <div className="mt-3 flex items-center justify-between text-muted-foreground">
+          <div className="mt-2.5 -ml-1.5 flex items-center justify-between text-muted-foreground max-w-sm sm:max-w-md">
             <ActionButton
               label="Spark"
               active={sparked}
-              activeClass="text-primary"
+              activeClass="text-primary font-medium"
               onClick={onSpark}
-              icon={<Flame className={cn("h-[18px] w-[18px]", sparked && "fill-current")} />}
+              icon={<Flame className={cn("h-4 w-4", sparked && "fill-current")} />}
               count={drop.spark_count}
             />
             <ActionButton
               label="Echo"
               onClick={() => navigate({ to: "/drop/$id", params: { id: drop.drop_id } })}
-              icon={<MessageCircle className="h-[18px] w-[18px]" />}
+              icon={<MessageCircle className="h-4 w-4" />}
               count={drop.echo_count}
             />
             <ActionButton
               label="Relay"
               active={relayed}
-              activeClass="text-chart-2"
+              activeClass="text-emerald-500 font-medium"
               onClick={onRelay}
-              icon={<Repeat2 className="h-[18px] w-[18px]" />}
+              icon={<Repeat2 className="h-4 w-4" />}
               count={drop.relay_count}
             />
             <ActionButton
               label="Pass"
               active={passed}
-              activeClass="text-chart-1"
+              activeClass="text-sky-500 font-medium"
               onClick={onPass}
-              icon={<Share2 className="h-[18px] w-[18px]" />}
+              icon={<Share2 className="h-4 w-4" />}
               count={drop.pass_count}
             />
           </div>
@@ -309,20 +310,20 @@ function ActionButton({
 }) {
   return (
     <motion.button
-      whileTap={{ scale: 0.85 }}
+      whileTap={{ scale: 0.88 }}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
         onClick();
       }}
       className={cn(
-        "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors hover:bg-accent hover:text-foreground",
-        active && activeClass,
+        "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition-colors hover:bg-accent/80 hover:text-foreground",
+        active ? activeClass : "text-muted-foreground",
       )}
       aria-label={label}
     >
       {icon}
-      {count > 0 && <span className="tabular-nums">{compactCount(count)}</span>}
+      {count > 0 && <span className="tabular-nums text-[11px]">{compactCount(count)}</span>}
     </motion.button>
   );
 }
