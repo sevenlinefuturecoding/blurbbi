@@ -12,6 +12,7 @@ import {
   Flag,
   VolumeX,
   Trash2,
+  Pin,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -41,12 +42,18 @@ export function DropCard({
   viewerId,
   engagement,
   className,
+  isPinned = false,
+  onTogglePin,
+  relayedBy,
 }: {
   drop: FeedDrop;
-  rank?: number;
+  rank?: number | undefined;
   viewerId: string | undefined;
   engagement: EngagementState | undefined;
   className?: string | undefined;
+  isPinned?: boolean | undefined;
+  onTogglePin?: (() => void | Promise<void>) | undefined;
+  relayedBy?: string | undefined;
 }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -139,9 +146,22 @@ export function DropCard({
       transition={{ duration: 0.25, ease: "easeOut" }}
       className={cn(
         "rounded-3xl border border-border bg-card p-4 shadow-sm transition-all hover:border-ring/50 hover:shadow-md sm:p-5",
+        isPinned && "border-primary/40 bg-card shadow-sm",
         className,
       )}
     >
+      {relayedBy && (
+        <div className="mb-2.5 flex items-center gap-1.5 pl-1 text-xs font-medium text-muted-foreground">
+          <Repeat2 className="h-3.5 w-3.5 text-chart-2" />
+          <span>Relayed by @{relayedBy}</span>
+        </div>
+      )}
+      {isPinned && (
+        <div className="mb-2.5 flex items-center gap-1.5 pl-1 text-xs font-semibold text-primary">
+          <Pin className="h-3.5 w-3.5 fill-current" />
+          <span>Pinned Drop</span>
+        </div>
+      )}
       <div className="flex items-start gap-3">
         <Link to="/u/$username" params={{ username: drop.username }} className="shrink-0">
           <BlurbiAvatar emoji={drop.avatar_emoji} color={drop.avatar_color} />
@@ -187,12 +207,20 @@ export function DropCard({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="rounded-2xl">
                 {isMine ? (
-                  <DropdownMenuItem
-                    onClick={onDelete}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" /> Delete Drop
-                  </DropdownMenuItem>
+                  <>
+                    {onTogglePin && (
+                      <DropdownMenuItem onClick={onTogglePin}>
+                        <Pin className={cn("h-4 w-4", isPinned && "text-primary fill-current")} />
+                        {isPinned ? "Unpin from profile" : "Pin to profile"}
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      onClick={onDelete}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" /> Delete Drop
+                    </DropdownMenuItem>
+                  </>
                 ) : (
                   <>
                     <DropdownMenuItem onClick={() => setReportOpen(true)}>

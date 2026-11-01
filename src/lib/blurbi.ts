@@ -17,7 +17,12 @@ export type FeedDrop = {
   score: number | string | null;
 };
 
-export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type Profile = Database["public"]["Tables"]["profiles"]["Row"] & {
+  website?: string | null;
+  location?: string | null;
+  pinned_drop_id?: string | null;
+  is_verified?: boolean | null;
+};
 
 /** Per-viewer engagement state for a set of drops. */
 export type EngagementState = {

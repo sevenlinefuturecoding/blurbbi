@@ -285,6 +285,10 @@ export type Database = {
           onboarded: boolean;
           updated_at: string;
           username: string;
+          website?: string | null;
+          location?: string | null;
+          pinned_drop_id?: string | null;
+          is_verified?: boolean | null;
         };
         Insert: {
           avatar_color?: string;
@@ -298,6 +302,10 @@ export type Database = {
           onboarded?: boolean;
           updated_at?: string;
           username: string;
+          website?: string | null;
+          location?: string | null;
+          pinned_drop_id?: string | null;
+          is_verified?: boolean | null;
         };
         Update: {
           avatar_color?: string;
@@ -311,6 +319,10 @@ export type Database = {
           onboarded?: boolean;
           updated_at?: string;
           username?: string;
+          website?: string | null;
+          location?: string | null;
+          pinned_drop_id?: string | null;
+          is_verified?: boolean | null;
         };
         Relationships: [];
       };
