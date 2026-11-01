@@ -11,12 +11,23 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as HallRouteImport } from './routes/hall'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as AuthenticatedOnboardedRouteRouteImport } from './routes/_authenticated/_onboarded/route'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminAdminsRouteImport } from './routes/admin/admins'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
+import { Route as AdminAuditLogsRouteImport } from './routes/admin/audit-logs'
+import { Route as AdminDropsRouteImport } from './routes/admin/drops'
+import { Route as AdminLoginRouteImport } from './routes/admin/login'
+import { Route as AdminModerationRouteImport } from './routes/admin/moderation'
+import { Route as AdminReportsRouteImport } from './routes/admin/reports'
+import { Route as AdminRolesRouteImport } from './routes/admin/roles'
+import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as DropIdRouteImport } from './routes/drop.$id'
 import { Route as TTagRouteImport } from './routes/t.$tag'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -32,7 +43,7 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
+const AdminRouteRoute = AdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => rootRouteImport,
@@ -61,6 +72,61 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAdminsRoute = AdminAdminsRouteImport.update({
+  id: '/admins',
+  path: '/admins',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAuditLogsRoute = AdminAuditLogsRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminDropsRoute = AdminDropsRouteImport.update({
+  id: '/drops',
+  path: '/drops',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminModerationRoute = AdminModerationRouteImport.update({
+  id: '/moderation',
+  path: '/moderation',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminRolesRoute = AdminRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const DropIdRoute = DropIdRouteImport.update({
   id: '/drop/$id',
@@ -92,27 +158,48 @@ const AuthenticatedOnboardedSettingsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/hall': typeof HallRoute
   '/search': typeof SearchRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/admin/admins': typeof AdminAdminsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/audit-logs': typeof AdminAuditLogsRoute
+  '/admin/drops': typeof AdminDropsRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/moderation': typeof AdminModerationRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/roles': typeof AdminRolesRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/drop/$id': typeof DropIdRoute
   '/t/$tag': typeof TTagRoute
   '/u/$username': typeof UUsernameRoute
+  '/admin/': typeof AdminIndexRoute
   '/notifications': typeof AuthenticatedOnboardedNotificationsRoute
   '/settings': typeof AuthenticatedOnboardedSettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/hall': typeof HallRoute
   '/search': typeof SearchRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/admin/admins': typeof AdminAdminsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/audit-logs': typeof AdminAuditLogsRoute
+  '/admin/drops': typeof AdminDropsRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/moderation': typeof AdminModerationRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/roles': typeof AdminRolesRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/drop/$id': typeof DropIdRoute
   '/t/$tag': typeof TTagRoute
   '/u/$username': typeof UUsernameRoute
+  '/admin': typeof AdminIndexRoute
   '/notifications': typeof AuthenticatedOnboardedNotificationsRoute
   '/settings': typeof AuthenticatedOnboardedSettingsRoute
 }
@@ -120,15 +207,26 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/hall': typeof HallRoute
   '/search': typeof SearchRoute
   '/_authenticated/_onboarded': typeof AuthenticatedOnboardedRouteRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/admin/admins': typeof AdminAdminsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/audit-logs': typeof AdminAuditLogsRoute
+  '/admin/drops': typeof AdminDropsRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/moderation': typeof AdminModerationRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/roles': typeof AdminRolesRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/drop/$id': typeof DropIdRoute
   '/t/$tag': typeof TTagRoute
   '/u/$username': typeof UUsernameRoute
+  '/admin/': typeof AdminIndexRoute
   '/_authenticated/_onboarded/notifications': typeof AuthenticatedOnboardedNotificationsRoute
   '/_authenticated/_onboarded/settings': typeof AuthenticatedOnboardedSettingsRoute
 }
@@ -141,22 +239,43 @@ export interface FileRouteTypes {
     | '/hall'
     | '/search'
     | '/onboarding'
+    | '/admin/admins'
+    | '/admin/analytics'
+    | '/admin/audit-logs'
+    | '/admin/drops'
+    | '/admin/login'
+    | '/admin/moderation'
+    | '/admin/reports'
+    | '/admin/roles'
+    | '/admin/settings'
+    | '/admin/users'
     | '/drop/$id'
     | '/t/$tag'
     | '/u/$username'
+    | '/admin/'
     | '/notifications'
     | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/auth'
     | '/hall'
     | '/search'
     | '/onboarding'
+    | '/admin/admins'
+    | '/admin/analytics'
+    | '/admin/audit-logs'
+    | '/admin/drops'
+    | '/admin/login'
+    | '/admin/moderation'
+    | '/admin/reports'
+    | '/admin/roles'
+    | '/admin/settings'
+    | '/admin/users'
     | '/drop/$id'
     | '/t/$tag'
     | '/u/$username'
+    | '/admin'
     | '/notifications'
     | '/settings'
   id:
@@ -169,9 +288,20 @@ export interface FileRouteTypes {
     | '/search'
     | '/_authenticated/_onboarded'
     | '/_authenticated/onboarding'
+    | '/admin/admins'
+    | '/admin/analytics'
+    | '/admin/audit-logs'
+    | '/admin/drops'
+    | '/admin/login'
+    | '/admin/moderation'
+    | '/admin/reports'
+    | '/admin/roles'
+    | '/admin/settings'
+    | '/admin/users'
     | '/drop/$id'
     | '/t/$tag'
     | '/u/$username'
+    | '/admin/'
     | '/_authenticated/_onboarded/notifications'
     | '/_authenticated/_onboarded/settings'
   fileRoutesById: FileRoutesById
@@ -179,7 +309,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AdminRoute: typeof AdminRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   HallRoute: typeof HallRoute
   SearchRoute: typeof SearchRoute
@@ -208,7 +338,7 @@ declare module '@tanstack/react-router' {
       id: '/admin'
       path: '/admin'
       fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+      preLoaderRoute: typeof AdminRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -245,6 +375,83 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/admins': {
+      id: '/admin/admins'
+      path: '/admins'
+      fullPath: '/admin/admins'
+      preLoaderRoute: typeof AdminAdminsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/audit-logs': {
+      id: '/admin/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/admin/audit-logs'
+      preLoaderRoute: typeof AdminAuditLogsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/drops': {
+      id: '/admin/drops'
+      path: '/drops'
+      fullPath: '/admin/drops'
+      preLoaderRoute: typeof AdminDropsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/moderation': {
+      id: '/admin/moderation'
+      path: '/moderation'
+      fullPath: '/admin/moderation'
+      preLoaderRoute: typeof AdminModerationRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/roles': {
+      id: '/admin/roles'
+      path: '/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AdminRolesRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/drop/$id': {
       id: '/drop/$id'
@@ -315,10 +522,42 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface AdminRouteRouteChildren {
+  AdminAdminsRoute: typeof AdminAdminsRoute
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminAuditLogsRoute: typeof AdminAuditLogsRoute
+  AdminDropsRoute: typeof AdminDropsRoute
+  AdminLoginRoute: typeof AdminLoginRoute
+  AdminModerationRoute: typeof AdminModerationRoute
+  AdminReportsRoute: typeof AdminReportsRoute
+  AdminRolesRoute: typeof AdminRolesRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAdminsRoute: AdminAdminsRoute,
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminAuditLogsRoute: AdminAuditLogsRoute,
+  AdminDropsRoute: AdminDropsRoute,
+  AdminLoginRoute: AdminLoginRoute,
+  AdminModerationRoute: AdminModerationRoute,
+  AdminReportsRoute: AdminReportsRoute,
+  AdminRolesRoute: AdminRolesRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AdminRoute: AdminRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   HallRoute: HallRoute,
   SearchRoute: SearchRoute,

@@ -953,3 +953,132 @@ export async function globalAdminSearch(queryText: string): Promise<AdminGlobalS
     })),
   };
 }
+
+// -----------------------------------------------------------------------------
+// 11. ADMIN INVITATIONS & ACCESS CONTROL
+// -----------------------------------------------------------------------------
+
+export interface AdminInvitationItem {
+  id: string;
+  email: string;
+  user_id: string | null;
+  role_id: AdminRole;
+  invited_by: string;
+  token: string;
+  expires_at: string;
+  accepted_at: string | null;
+  revoked_at: string | null;
+  status: "pending" | "accepted" | "expired" | "revoked";
+  created_at: string;
+  inviter?: {
+    username: string;
+    display_name: string;
+  };
+}
+
+export async function fetchAdminInvitations(): Promise<AdminInvitationItem[]> {
+  try {
+    const { data, error } = await supabase
+      .from("admin_invitations")
+      .select(
+        `
+        id, email, user_id, role_id, invited_by, token, expires_at,
+        accepted_at, revoked_at, status, created_at,
+        inviter:profiles!admin_invitations_invited_by_fkey(username, display_name)
+      `,
+      )
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return (data as unknown as AdminInvitationItem[]) ?? [];
+  } catch (err) {
+    console.error("fetchAdminInvitations error:", err);
+    return [];
+  }
+}
+
+export async function createAdminInvitation(
+  email: string,
+  roleId: AdminRole,
+): Promise<{ token: string; id: string } | null> {
+  try {
+    const { data, error } = await supabase.rpc(
+      "admin_create_invitation" as never,
+      {
+        p_email: email,
+        p_role_id: roleId,
+      } as never,
+    );
+
+    if (error || !data) throw error || new Error("Failed to create invitation");
+    return data as unknown as { token: string; id: string };
+  } catch (err) {
+    console.error("createAdminInvitation error:", err);
+    return null;
+  }
+}
+
+export async function acceptAdminInvitation(token: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.rpc(
+      "admin_accept_invitation" as never,
+      {
+        p_token: token,
+      } as never,
+    );
+
+    return !error;
+  } catch (err) {
+    console.error("acceptAdminInvitation error:", err);
+    return false;
+  }
+}
+
+export async function revokeAdminInvitation(invitationId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.rpc(
+      "admin_revoke_invitation" as never,
+      {
+        p_invitation_id: invitationId,
+      } as never,
+    );
+
+    return !error;
+  } catch (err) {
+    console.error("revokeAdminInvitation error:", err);
+    return false;
+  }
+}
+
+export async function recordAdminLogin(metadata: Record<string, unknown> = {}): Promise<void> {
+  try {
+    await supabase.rpc(
+      "admin_record_login" as never,
+      {
+        p_metadata: metadata,
+      } as never,
+    );
+  } catch (err) {
+    console.warn("recordAdminLogin error:", err);
+  }
+}
+
+export async function verifyAdminSession(): Promise<{
+  authorized: boolean;
+  role: AdminRole | null;
+}> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { authorized: false, role: null };
+
+    const role = await getCurrentAdminRole();
+    return {
+      authorized: Boolean(role),
+      role,
+    };
+  } catch {
+    return { authorized: false, role: null };
+  }
+}

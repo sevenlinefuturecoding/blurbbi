@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Users,
@@ -19,15 +20,24 @@ import { timeAgo } from "@/lib/blurbi";
 import type { AdminTab } from "./admin-layout";
 
 interface AdminOverviewViewProps {
-  onNavigateTab: (tab: AdminTab) => void;
+  onNavigateTab?: (tab: AdminTab) => void;
 }
 
 export function AdminOverviewView({ onNavigateTab }: AdminOverviewViewProps) {
+  const navigate = useNavigate();
   const { data, isLoading, refetch } = useQuery<PlatformAnalyticsData | null>({
     queryKey: ["admin", "analytics", "overview"],
     queryFn: () => fetchPlatformAnalytics("30d"),
     refetchInterval: 20000,
   });
+
+  function handleNavigate(tab: AdminTab, path: string) {
+    if (onNavigateTab) {
+      onNavigateTab(tab);
+    } else {
+      navigate({ to: path });
+    }
+  }
 
   const kpis = data?.kpis ?? {
     total_users: 0,
@@ -70,7 +80,7 @@ export function AdminOverviewView({ onNavigateTab }: AdminOverviewViewProps) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {/* Total Users */}
         <div
-          onClick={() => onNavigateTab("users")}
+          onClick={() => handleNavigate("users", "/admin/users")}
           className="rounded-xl border border-border bg-card p-4 hover:border-primary/40 transition-colors cursor-pointer group"
         >
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -89,7 +99,7 @@ export function AdminOverviewView({ onNavigateTab }: AdminOverviewViewProps) {
 
         {/* Total Drops */}
         <div
-          onClick={() => onNavigateTab("drops")}
+          onClick={() => handleNavigate("drops", "/admin/drops")}
           className="rounded-xl border border-border bg-card p-4 hover:border-primary/40 transition-colors cursor-pointer group"
         >
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -104,7 +114,7 @@ export function AdminOverviewView({ onNavigateTab }: AdminOverviewViewProps) {
 
         {/* Engagement Signals */}
         <div
-          onClick={() => onNavigateTab("analytics")}
+          onClick={() => handleNavigate("analytics", "/admin/analytics")}
           className="rounded-xl border border-border bg-card p-4 hover:border-primary/40 transition-colors cursor-pointer group"
         >
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -123,7 +133,7 @@ export function AdminOverviewView({ onNavigateTab }: AdminOverviewViewProps) {
 
         {/* Pending Moderation */}
         <div
-          onClick={() => onNavigateTab("moderation")}
+          onClick={() => handleNavigate("moderation", "/admin/moderation")}
           className="rounded-xl border border-border bg-card p-4 hover:border-destructive/40 transition-colors cursor-pointer group"
         >
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -140,7 +150,7 @@ export function AdminOverviewView({ onNavigateTab }: AdminOverviewViewProps) {
 
         {/* Suspended Accounts */}
         <div
-          onClick={() => onNavigateTab("users")}
+          onClick={() => handleNavigate("users", "/admin/users")}
           className="rounded-xl border border-border bg-card p-4 hover:border-border transition-colors cursor-pointer group"
         >
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -210,7 +220,7 @@ export function AdminOverviewView({ onNavigateTab }: AdminOverviewViewProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onNavigateTab("drops")}
+                onClick={() => handleNavigate("drops", "/admin/drops")}
                 className="h-7 text-xs"
               >
                 View all drops
@@ -258,7 +268,7 @@ export function AdminOverviewView({ onNavigateTab }: AdminOverviewViewProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onNavigateTab("users")}
+                onClick={() => handleNavigate("users", "/admin/users")}
                 className="h-7 text-xs"
               >
                 View all

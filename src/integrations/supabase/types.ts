@@ -692,6 +692,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      admin_invitations: {
+        Row: {
+          id: string;
+          email: string;
+          user_id: string | null;
+          role_id: string;
+          invited_by: string;
+          token: string;
+          expires_at: string;
+          accepted_at: string | null;
+          revoked_at: string | null;
+          status: "pending" | "accepted" | "expired" | "revoked";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          user_id?: string | null;
+          role_id: string;
+          invited_by: string;
+          token: string;
+          expires_at?: string;
+          accepted_at?: string | null;
+          revoked_at?: string | null;
+          status?: "pending" | "accepted" | "expired" | "revoked";
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          user_id?: string | null;
+          role_id?: string;
+          invited_by?: string;
+          token?: string;
+          expires_at?: string;
+          accepted_at?: string | null;
+          revoked_at?: string | null;
+          status?: "pending" | "accepted" | "expired" | "revoked";
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       user_restrictions: {
         Row: {
           id: string;

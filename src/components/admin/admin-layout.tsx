@@ -1,15 +1,15 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Users,
   MessageSquare,
   ShieldAlert,
+  Flag,
   BarChart3,
-  Cpu,
-  Megaphone,
   Sliders,
-  Shield,
+  ShieldCheck,
+  UserCheck,
   FileText,
   Search,
   Menu,
@@ -19,10 +19,11 @@ import {
   Moon,
   LogOut,
   ChevronRight,
-  ShieldCheck,
-  CheckCircle2,
+  Shield,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BlurbiAvatar } from "@/components/blurbi/blurbi-avatar";
@@ -35,22 +36,64 @@ export type AdminTab =
   | "users"
   | "drops"
   | "moderation"
+  | "reports"
   | "analytics"
-  | "engine"
-  | "announcements"
   | "settings"
   | "roles"
+  | "admins"
   | "audit";
 
 interface AdminLayoutProps {
-  currentTab: AdminTab;
-  onSelectTab: (tab: AdminTab) => void;
+  currentTab?: AdminTab;
+  onSelectTab?: (tab: AdminTab) => void;
   children: ReactNode;
+}
+
+export function isItemVisible(role: AdminRole | null, itemId: AdminTab): boolean {
+  if (role === "super_admin") return true;
+  if (role === "admin") {
+    // Admin cannot manage RBAC roles or invite new admins (Super Admin only)
+    return itemId !== "roles" && itemId !== "admins";
+  }
+  if (role === "moderator") {
+    return (
+      itemId === "overview" ||
+      itemId === "users" ||
+      itemId === "drops" ||
+      itemId === "moderation" ||
+      itemId === "reports"
+    );
+  }
+  if (role === "support") {
+    return (
+      itemId === "overview" || itemId === "users" || itemId === "moderation" || itemId === "reports"
+    );
+  }
+  if (role === "analyst") {
+    return itemId === "overview" || itemId === "analytics";
+  }
+  // Default/fallback for standard admin
+  return itemId !== "roles" && itemId !== "admins";
+}
+
+function getTabFromPath(path: string): AdminTab {
+  if (path.startsWith("/admin/users")) return "users";
+  if (path.startsWith("/admin/drops")) return "drops";
+  if (path.startsWith("/admin/moderation")) return "moderation";
+  if (path.startsWith("/admin/reports")) return "reports";
+  if (path.startsWith("/admin/analytics")) return "analytics";
+  if (path.startsWith("/admin/roles")) return "roles";
+  if (path.startsWith("/admin/admins")) return "admins";
+  if (path.startsWith("/admin/audit-logs")) return "audit";
+  if (path.startsWith("/admin/settings")) return "settings";
+  return "overview";
 }
 
 export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutProps) {
   const { data: me } = useMyProfile();
   const navigate = useNavigate();
+  const location = useLocation();
+  const qc = useQueryClient();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -90,35 +133,71 @@ export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutPr
     }
   }
 
+  async function handleLogout() {
+    try {
+      await supabase.auth.signOut();
+      qc.clear();
+      toast.success("Signed out of Administrative Control Center");
+      navigate({ to: "/admin/login" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to sign out");
+    }
+  }
+
   const navSections = [
     {
       title: "Operations",
       items: [
-        { id: "overview" as const, label: "Overview", icon: LayoutDashboard },
-        { id: "users" as const, label: "Users & Safety", icon: Users },
-        { id: "drops" as const, label: "Drop Content", icon: MessageSquare },
-        { id: "moderation" as const, label: "Moderation Queue", icon: ShieldAlert },
+        { id: "overview" as const, label: "Overview", icon: LayoutDashboard, path: "/admin" },
+        { id: "users" as const, label: "Users & Safety", icon: Users, path: "/admin/users" },
+        { id: "drops" as const, label: "Drop Content", icon: MessageSquare, path: "/admin/drops" },
+        {
+          id: "moderation" as const,
+          label: "Moderation Queue",
+          icon: ShieldAlert,
+          path: "/admin/moderation",
+        },
+        { id: "reports" as const, label: "Reports", icon: Flag, path: "/admin/reports" },
       ],
     },
     {
       title: "Intelligence",
       items: [
-        { id: "analytics" as const, label: "Analytics & Trends", icon: BarChart3 },
-        { id: "engine" as const, label: "Intelligence Engine", icon: Cpu },
+        {
+          id: "analytics" as const,
+          label: "Analytics & Trends",
+          icon: BarChart3,
+          path: "/admin/analytics",
+        },
       ],
     },
     {
       title: "Platform",
       items: [
-        { id: "announcements" as const, label: "Announcements", icon: Megaphone },
-        { id: "settings" as const, label: "Feature Flags & Settings", icon: Sliders },
+        {
+          id: "settings" as const,
+          label: "Platform Settings & Flags",
+          icon: Sliders,
+          path: "/admin/settings",
+        },
       ],
     },
     {
       title: "Administration",
       items: [
-        { id: "roles" as const, label: "Roles & RBAC", icon: ShieldCheck },
-        { id: "audit" as const, label: "Audit Trail", icon: FileText },
+        { id: "roles" as const, label: "Roles & RBAC", icon: ShieldCheck, path: "/admin/roles" },
+        {
+          id: "admins" as const,
+          label: "Admin Personnel",
+          icon: UserCheck,
+          path: "/admin/admins",
+        },
+        {
+          id: "audit" as const,
+          label: "Audit Trail",
+          icon: FileText,
+          path: "/admin/audit-logs",
+        },
       ],
     },
   ];
@@ -128,15 +207,24 @@ export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutPr
     users: "Users & Safety",
     drops: "Drop Content",
     moderation: "Moderation Queue",
+    reports: "Reports",
     analytics: "Analytics & Trends",
-    engine: "Intelligence Engine",
-    announcements: "Announcements",
-    settings: "Feature Flags & Settings",
+    settings: "Platform Settings & Flags",
     roles: "Roles & RBAC",
+    admins: "Admin Personnel",
     audit: "Audit Trail",
   };
 
-  const currentTabLabel = TAB_LABELS[currentTab] || "Overview";
+  const activeTab: AdminTab = currentTab || getTabFromPath(location.pathname);
+  const currentTabLabel = TAB_LABELS[activeTab] || "Overview";
+
+  // Filter sections by RBAC permissions
+  const visibleSections = navSections
+    .map((sec) => ({
+      ...sec,
+      items: sec.items.filter((item) => isItemVisible(adminRole ?? null, item.id)),
+    }))
+    .filter((sec) => sec.items.length > 0);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">
@@ -144,20 +232,23 @@ export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutPr
       <AdminSearchDialog
         open={searchDialogOpen}
         onOpenChange={setSearchDialogOpen}
-        onSelectUser={(userId) => {
-          onSelectTab("users");
+        onSelectUser={(_userId) => {
+          navigate({ to: "/admin/users" });
+          onSelectTab?.("users");
         }}
-        onSelectDrop={(dropId) => {
-          onSelectTab("drops");
+        onSelectDrop={(_dropId) => {
+          navigate({ to: "/admin/drops" });
+          onSelectTab?.("drops");
         }}
-        onSelectReport={(reportId) => {
-          onSelectTab("moderation");
+        onSelectReport={(_reportId) => {
+          navigate({ to: "/admin/moderation" });
+          onSelectTab?.("moderation");
         }}
       />
 
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex flex-col border-r border-border bg-card transition-all duration-200 z-30 ${
+        className={`hidden md:flex flex-col border-r border-border bg-card transition-all duration-200 z-30 shrink-0 ${
           sidebarCollapsed ? "w-16" : "w-64"
         }`}
       >
@@ -165,7 +256,7 @@ export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutPr
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           {!sidebarCollapsed ? (
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-black text-xs">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-black text-xs shadow-sm">
                 B
               </span>
               <div>
@@ -176,7 +267,7 @@ export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutPr
               </div>
             </div>
           ) : (
-            <span className="mx-auto flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-black text-xs">
+            <span className="mx-auto flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-black text-xs shadow-sm">
               B
             </span>
           )}
@@ -196,7 +287,7 @@ export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutPr
 
         {/* Sidebar Navigation */}
         <div className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
-          {navSections.map((sec) => (
+          {visibleSections.map((sec) => (
             <div key={sec.title} className="space-y-1">
               {!sidebarCollapsed && (
                 <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 font-mono">
@@ -205,11 +296,12 @@ export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutPr
               )}
               {sec.items.map((item) => {
                 const Icon = item.icon;
-                const active = currentTab === item.id;
+                const active = activeTab === item.id;
                 return (
-                  <button
+                  <Link
                     key={item.id}
-                    onClick={() => onSelectTab(item.id)}
+                    to={item.path}
+                    onClick={() => onSelectTab?.(item.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
                       active
                         ? "bg-primary text-primary-foreground shadow-sm"
@@ -219,7 +311,7 @@ export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutPr
                   >
                     <Icon className="h-4 w-4 shrink-0" />
                     {!sidebarCollapsed && <span>{item.label}</span>}
-                  </button>
+                  </Link>
                 );
               })}
             </div>
@@ -240,16 +332,32 @@ export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutPr
             </div>
           )}
 
-          <Link to="/" className="w-full">
+          <div className="space-y-1.5 pt-1">
+            <Link to="/" className="w-full block">
+              <Button
+                variant="outline"
+                size="sm"
+                className={`w-full text-xs h-8 gap-1.5 ${sidebarCollapsed ? "px-0 justify-center" : ""}`}
+                title={sidebarCollapsed ? "Return to Stream" : undefined}
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                {!sidebarCollapsed && "Return to Stream"}
+              </Button>
+            </Link>
+
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className={`w-full text-xs h-8 gap-1.5 ${sidebarCollapsed ? "px-0" : ""}`}
+              onClick={handleLogout}
+              className={`w-full text-xs h-8 gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive ${
+                sidebarCollapsed ? "px-0 justify-center" : ""
+              }`}
+              title={sidebarCollapsed ? "Sign Out of Admin" : undefined}
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              {!sidebarCollapsed && "Return to Stream"}
+              <LogOut className="h-3.5 w-3.5" />
+              {!sidebarCollapsed && "Sign Out"}
             </Button>
-          </Link>
+          </div>
         </div>
       </aside>
 
@@ -342,19 +450,20 @@ export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutPr
               </div>
 
               <div className="flex-1 overflow-y-auto py-4 space-y-4">
-                {navSections.map((sec) => (
+                {visibleSections.map((sec) => (
                   <div key={sec.title} className="space-y-1">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-mono">
                       {sec.title}
                     </div>
                     {sec.items.map((item) => {
                       const Icon = item.icon;
-                      const active = currentTab === item.id;
+                      const active = activeTab === item.id;
                       return (
-                        <button
+                        <Link
                           key={item.id}
+                          to={item.path}
                           onClick={() => {
-                            onSelectTab(item.id);
+                            onSelectTab?.(item.id);
                             setSidebarOpen(false);
                           }}
                           className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium ${
@@ -365,19 +474,30 @@ export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutPr
                         >
                           <Icon className="h-4 w-4 shrink-0" />
                           <span>{item.label}</span>
-                        </button>
+                        </Link>
                       );
                     })}
                   </div>
                 ))}
               </div>
 
-              <div className="pt-3 border-t border-border">
-                <Link to="/">
+              <div className="pt-3 border-t border-border space-y-2">
+                <Link to="/" onClick={() => setSidebarOpen(false)}>
                   <Button variant="outline" size="sm" className="w-full text-xs">
                     Return to Stream
                   </Button>
                 </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full text-xs text-destructive hover:bg-destructive/10"
+                >
+                  Sign Out
+                </Button>
               </div>
             </div>
           </div>

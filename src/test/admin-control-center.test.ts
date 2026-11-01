@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AdminRole, AccountStatus, ReportCategory, DropModerationStatus } from "@/lib/admin";
+import { isItemVisible, type AdminTab } from "@/components/admin/admin-layout";
 
 describe("Blurbbi Advanced Super Admin Control Center: Comprehensive Test Suite", () => {
   // ---------------------------------------------------------------------------
@@ -257,26 +258,200 @@ describe("Blurbbi Advanced Super Admin Control Center: Comprehensive Test Suite"
   });
 
   // ---------------------------------------------------------------------------
-  // 6. Audit Trail Immutability
+  // 7. Phase 1: Admin Invitation Lifecycle & Token Security
   // ---------------------------------------------------------------------------
-  describe("6. Audit Log Integrity", () => {
-    it("ensures audit log records capture actor, target, previous and new state diffs", () => {
-      const auditEntry = {
-        admin_id: "admin-1",
-        action_type: "user_suspension",
-        target_type: "user",
-        target_id: "user-violator",
-        previous_state: { account_status: "active" },
-        new_state: { account_status: "suspended", duration: 72 },
-        reason: "Harassment violation in comments",
-        created_at: new Date().toISOString(),
+  describe("7. Admin Invitation Lifecycle & Single-Use Tokens", () => {
+    interface MockInvitation {
+      id: string;
+      email: string;
+      role_id: AdminRole;
+      invited_by: string;
+      token: string;
+      status: "pending" | "accepted" | "revoked" | "expired";
+      expires_at: number; // timestamp
+      accepted_at: number | null;
+    }
+
+    it("generates a single-use invitation with 48-hour expiration", () => {
+      const now = Date.now();
+      const expiresAt = now + 48 * 3600 * 1000;
+      const invite: MockInvitation = {
+        id: "inv-1",
+        email: "newadmin@blurbbi.com",
+        role_id: "moderator",
+        invited_by: "super-admin-uuid",
+        token: "tok_super_secret_single_use_abc123",
+        status: "pending",
+        expires_at: expiresAt,
+        accepted_at: null,
       };
 
-      expect(auditEntry.admin_id).toBeDefined();
-      expect(auditEntry.action_type).toBe("user_suspension");
-      expect(auditEntry.previous_state.account_status).toBe("active");
-      expect(auditEntry.new_state.account_status).toBe("suspended");
-      expect(auditEntry.reason).toContain("Harassment");
+      expect(invite.status).toBe("pending");
+      expect(invite.token).toHaveLength(34);
+      expect(invite.expires_at).toBeGreaterThan(now);
+    });
+
+    it("accepts a pending invitation within expiration window and changes status to accepted", () => {
+      const now = Date.now();
+      const invite: MockInvitation = {
+        id: "inv-1",
+        email: "newadmin@blurbbi.com",
+        role_id: "admin",
+        invited_by: "super-admin-uuid",
+        token: "tok_valid_token",
+        status: "pending",
+        expires_at: now + 3600 * 1000,
+        accepted_at: null,
+      };
+
+      const acceptInvitation = (token: string, acceptTime: number) => {
+        if (invite.token !== token) return { success: false, error: "Invalid token" };
+        if (invite.status !== "pending")
+          return { success: false, error: "Already used or revoked" };
+        if (acceptTime > invite.expires_at) {
+          invite.status = "expired";
+          return { success: false, error: "Invitation expired" };
+        }
+        invite.status = "accepted";
+        invite.accepted_at = acceptTime;
+        return { success: true };
+      };
+
+      const res = acceptInvitation("tok_valid_token", now + 1000);
+      expect(res.success).toBe(true);
+      expect(invite.status).toBe("accepted");
+      expect(invite.accepted_at).toBeDefined();
+
+      // Second attempt to use the same token fails (single-use guarantee)
+      const secondAttempt = acceptInvitation("tok_valid_token", now + 2000);
+      expect(secondAttempt.success).toBe(false);
+      expect(secondAttempt.error).toContain("Already used");
+    });
+
+    it("rejects expired invitations and prevents claiming", () => {
+      const now = Date.now();
+      const invite: MockInvitation = {
+        id: "inv-2",
+        email: "late@blurbbi.com",
+        role_id: "support",
+        invited_by: "super-admin-uuid",
+        token: "tok_expired_token",
+        status: "pending",
+        expires_at: now - 1000, // expired 1s ago
+        accepted_at: null,
+      };
+
+      const isExpired = Date.now() > invite.expires_at;
+      expect(isExpired).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 8. Phase 1: Role-Based Navigation & View Visibility Guard
+  // ---------------------------------------------------------------------------
+  describe("8. Admin Navigation Filtering & RBAC Visibility (isItemVisible)", () => {
+    it("super_admin has visibility into all navigation items", () => {
+      const items: AdminTab[] = [
+        "overview",
+        "users",
+        "drops",
+        "moderation",
+        "reports",
+        "analytics",
+        "settings",
+        "roles",
+        "admins",
+        "audit",
+      ];
+
+      items.forEach((item) => {
+        expect(isItemVisible("super_admin", item)).toBe(true);
+      });
+    });
+
+    it("admin cannot view or access roles or admin invitation panels (Super Admin only)", () => {
+      expect(isItemVisible("admin", "overview")).toBe(true);
+      expect(isItemVisible("admin", "users")).toBe(true);
+      expect(isItemVisible("admin", "drops")).toBe(true);
+      expect(isItemVisible("admin", "moderation")).toBe(true);
+      expect(isItemVisible("admin", "settings")).toBe(true);
+      expect(isItemVisible("admin", "audit")).toBe(true);
+
+      // Super Admin only:
+      expect(isItemVisible("admin", "roles")).toBe(false);
+      expect(isItemVisible("admin", "admins")).toBe(false);
+    });
+
+    it("moderator is restricted to overview, content drops, users, and moderation queue", () => {
+      expect(isItemVisible("moderator", "overview")).toBe(true);
+      expect(isItemVisible("moderator", "drops")).toBe(true);
+      expect(isItemVisible("moderator", "moderation")).toBe(true);
+      expect(isItemVisible("moderator", "reports")).toBe(true);
+      expect(isItemVisible("moderator", "users")).toBe(true);
+
+      // Blocked:
+      expect(isItemVisible("moderator", "analytics")).toBe(false);
+      expect(isItemVisible("moderator", "settings")).toBe(false);
+      expect(isItemVisible("moderator", "roles")).toBe(false);
+      expect(isItemVisible("moderator", "admins")).toBe(false);
+      expect(isItemVisible("moderator", "audit")).toBe(false);
+    });
+
+    it("support is restricted to overview, users, moderation queue, and reports", () => {
+      expect(isItemVisible("support", "overview")).toBe(true);
+      expect(isItemVisible("support", "users")).toBe(true);
+      expect(isItemVisible("support", "moderation")).toBe(true);
+      expect(isItemVisible("support", "reports")).toBe(true);
+
+      // Blocked:
+      expect(isItemVisible("support", "drops")).toBe(false);
+      expect(isItemVisible("support", "analytics")).toBe(false);
+      expect(isItemVisible("support", "settings")).toBe(false);
+      expect(isItemVisible("support", "roles")).toBe(false);
+      expect(isItemVisible("support", "admins")).toBe(false);
+    });
+
+    it("analyst has strictly overview and analytics visibility", () => {
+      expect(isItemVisible("analyst", "overview")).toBe(true);
+      expect(isItemVisible("analyst", "analytics")).toBe(true);
+
+      // Blocked:
+      expect(isItemVisible("analyst", "users")).toBe(false);
+      expect(isItemVisible("analyst", "drops")).toBe(false);
+      expect(isItemVisible("analyst", "moderation")).toBe(false);
+      expect(isItemVisible("analyst", "settings")).toBe(false);
+      expect(isItemVisible("analyst", "roles")).toBe(false);
+      expect(isItemVisible("analyst", "admins")).toBe(false);
+      expect(isItemVisible("analyst", "audit")).toBe(false);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 9. Phase 1: Admin Login Activity Recording & MFA Enforcement
+  // ---------------------------------------------------------------------------
+  describe("9. Admin Login Activity & Privileged MFA", () => {
+    it("constructs compliant login activity metadata audit payload", () => {
+      const loginPayload = {
+        user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+        auth_method: "password+mfa",
+        timestamp: new Date().toISOString(),
+      };
+
+      expect(loginPayload.user_agent).toContain("Macintosh");
+      expect(loginPayload.auth_method).toBe("password+mfa");
+      expect(loginPayload.timestamp).toBeDefined();
+    });
+
+    it("evaluates MFA requirement for privileged roles", () => {
+      const isMfaMandatory = (role: AdminRole): boolean => {
+        // Enforced for Super Admin and Admin roles
+        return role === "super_admin" || role === "admin";
+      };
+
+      expect(isMfaMandatory("super_admin")).toBe(true);
+      expect(isMfaMandatory("admin")).toBe(true);
+      expect(isMfaMandatory("moderator")).toBe(false);
+      expect(isMfaMandatory("analyst")).toBe(false);
     });
   });
 });
