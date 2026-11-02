@@ -232,8 +232,8 @@ export function AdminLayout({ currentTab, onSelectTab, children }: AdminLayoutPr
       <AdminSearchDialog
         open={searchDialogOpen}
         onOpenChange={setSearchDialogOpen}
-        onSelectUser={(_userId) => {
-          navigate({ to: "/admin/users" });
+        onSelectUser={(userId) => {
+          navigate({ to: `/admin/users/${userId}` });
           onSelectTab?.("users");
         }}
         onSelectDrop={(_dropId) => {

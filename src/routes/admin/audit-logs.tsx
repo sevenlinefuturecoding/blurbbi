@@ -14,4 +14,3 @@ export const Route = createFileRoute("/admin/audit-logs")({
 function AdminAuditLogsRoute() {
   return <AdminAuditLogsView />;
 }
-

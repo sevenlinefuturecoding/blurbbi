@@ -25,12 +25,110 @@ export interface AdminUserListItem {
   is_admin: boolean;
   warning_count: number;
   suspended_until: string | null;
+  ban_reason?: string | null;
   followers_count: number;
   following_count: number;
   created_at: string;
   updated_at: string;
   total_drops?: number;
+  drops_count?: number;
+  last_drop_at?: string | null;
   role?: AdminRole | null;
+  admin_role?: AdminRole | null;
+}
+
+export interface UserIntelligenceData {
+  profile: AdminUserDetail & {
+    admin_role?: AdminRole | null;
+    ban_reason?: string | null;
+  };
+  metrics: {
+    account_age_days: number;
+    total_drops: number;
+    total_orbiters: number;
+    total_orbiting: number;
+    total_sparks_received: number;
+    total_echoes_received: number;
+    total_relays_received: number;
+    total_sparks_given: number;
+    total_echoes_created: number;
+    total_relays_created: number;
+    reports_against_count: number;
+    reports_filed_count: number;
+    posting_frequency_weekly: number;
+  };
+  recent_drops: Array<{
+    id: string;
+    content: string;
+    spark_count: number;
+    echo_count: number;
+    relay_count: number;
+    pass_count: number;
+    is_pinned: boolean;
+    is_hidden: boolean;
+    moderation_status: DropModerationStatus;
+    moderation_reason: string | null;
+    created_at: string;
+  }>;
+  restrictions: UserRestrictionRecord[];
+  audit_history: Array<{
+    id: string;
+    action_type: string;
+    target_type: string;
+    previous_state: Record<string, unknown> | null;
+    new_state: Record<string, unknown> | null;
+    reason: string | null;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
+    admin?: {
+      username: string;
+      display_name: string;
+    };
+  }>;
+  reports: {
+    reports_against: Array<{
+      id: string;
+      category: ReportCategory;
+      reason: string;
+      status: ReportStatus;
+      created_at: string;
+      resolved_at: string | null;
+      resolution_action: string | null;
+      drop_id: string;
+      drop_snippet?: string;
+    }>;
+    reports_submitted: Array<{
+      id: string;
+      category: ReportCategory;
+      reason: string;
+      status: ReportStatus;
+      created_at: string;
+      resolved_at: string | null;
+    }>;
+  };
+}
+
+export interface UserTimelineEvent {
+  event_type: string;
+  description: string;
+  created_at: string;
+  entity_id?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface UserNetworkConnection {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_emoji: string;
+  avatar_color: string;
+  bio: string | null;
+  account_status: AccountStatus;
+  is_verified: boolean;
+  followers_count: number;
+  following_count: number;
+  connected_at: string;
+  is_mutual: boolean;
 }
 
 export interface AdminUserDetail extends AdminUserListItem {
@@ -329,7 +427,7 @@ export interface UserFilterOptions {
   verified?: boolean | "all";
   page?: number;
   limit?: number;
-  sortBy?: "created_at" | "followers_count" | "username";
+  sortBy?: "created_at" | "followers_count" | "following_count" | "username";
   sortOrder?: "asc" | "desc";
 }
 
@@ -505,6 +603,422 @@ export async function verifyUser(userId: string, isVerified: boolean): Promise<b
   } catch {
     return false;
   }
+}
+
+// -----------------------------------------------------------------------------
+// PHASE 2: ADVANCED USER INTELLIGENCE & MANAGEMENT API
+// -----------------------------------------------------------------------------
+
+export interface AdvancedUserFilterOptions extends UserFilterOptions {
+  registeredWithin?: "all" | "today" | "7d" | "30d" | "90d";
+}
+
+export interface AdvancedUsersResult {
+  users: AdminUserListItem[];
+  totalCount: number;
+  activeCount: number;
+  restrictedCount: number;
+  totalOverall: number;
+  page: number;
+  limit: number;
+}
+
+export async function fetchAdminUsersAdvanced(
+  options: AdvancedUserFilterOptions = {},
+): Promise<AdvancedUsersResult> {
+  const {
+    search = "",
+    status = "all",
+    verified = "all",
+    registeredWithin = "all",
+    sortBy = "created_at",
+    sortOrder = "desc",
+    page = 1,
+    limit = 15,
+  } = options;
+
+  try {
+    const { data, error } = await supabase.rpc(
+      "admin_get_users_advanced" as never,
+      {
+        p_search: search.trim() || null,
+        p_status: status,
+        p_verified: verified === "all" ? "all" : verified ? "verified" : "unverified",
+        p_registered_within: registeredWithin,
+        p_sort_by: sortBy,
+        p_sort_order: sortOrder,
+        p_page: page,
+        p_limit: limit,
+      } as never,
+    );
+
+    if (!error && data) {
+      const res = data as unknown as {
+        users: AdminUserListItem[];
+        total_count: number;
+        active_count: number;
+        restricted_count: number;
+        total_overall: number;
+        page: number;
+        limit: number;
+      };
+      return {
+        users: res.users ?? [],
+        totalCount: res.total_count ?? 0,
+        activeCount: res.active_count ?? 0,
+        restrictedCount: res.restricted_count ?? 0,
+        totalOverall: res.total_overall ?? 0,
+        page: res.page ?? page,
+        limit: res.limit ?? limit,
+      };
+    }
+  } catch (err) {
+    console.warn("admin_get_users_advanced RPC fallback:", err);
+  }
+
+  // Graceful fallback to client query
+  const fallback = await fetchAdminUsers(options);
+  return {
+    users: fallback.users,
+    totalCount: fallback.totalCount,
+    activeCount: fallback.users.filter((u) => u.account_status === "active").length,
+    restrictedCount: fallback.users.filter((u) => u.account_status !== "active").length,
+    totalOverall: fallback.totalCount,
+    page,
+    limit,
+  };
+}
+
+export async function fetchUserIntelligence(userId: string): Promise<UserIntelligenceData | null> {
+  try {
+    const { data, error } = await supabase.rpc(
+      "admin_get_user_intelligence" as never,
+      {
+        p_target_user_id: userId,
+      } as never,
+    );
+
+    if (!error && data) {
+      return data as unknown as UserIntelligenceData;
+    }
+  } catch (err) {
+    console.warn("admin_get_user_intelligence RPC fallback:", err);
+  }
+
+  // Fallback: construct from base tables
+  const baseDetail = await fetchAdminUserDetail(userId);
+  if (!baseDetail) return null;
+
+  const { data: drops } = await supabase
+    .from("drops")
+    .select(
+      "id, content, spark_count, echo_count, relay_count, pass_count, is_pinned, is_hidden, moderation_status, moderation_reason, created_at",
+    )
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  const now = Date.now();
+  const createdTime = new Date(baseDetail.created_at).getTime();
+  const ageDays = Math.max(Math.floor((now - createdTime) / (1000 * 60 * 60 * 24)), 0);
+
+  return {
+    profile: baseDetail,
+    metrics: {
+      account_age_days: ageDays,
+      total_drops: baseDetail.total_drops || (drops?.length ?? 0),
+      total_orbiters: baseDetail.followers_count || 0,
+      total_orbiting: baseDetail.following_count || 0,
+      total_sparks_received: baseDetail.total_sparks_received || 0,
+      total_echoes_received: baseDetail.total_echoes || 0,
+      total_relays_received: baseDetail.total_relays || 0,
+      total_sparks_given: 0,
+      total_echoes_created: 0,
+      total_relays_created: 0,
+      reports_against_count: baseDetail.reports_against || 0,
+      reports_filed_count: 0,
+      posting_frequency_weekly: Number(
+        ((baseDetail.total_drops || 0) / Math.max(ageDays > 7 ? ageDays / 7 : 1, 1)).toFixed(2),
+      ),
+    },
+    recent_drops: (drops as unknown as UserIntelligenceData["recent_drops"]) ?? [],
+    restrictions: baseDetail.restrictions || [],
+    audit_history: [],
+    reports: {
+      reports_against: [],
+      reports_submitted: [],
+    },
+  };
+}
+
+export async function fetchUserTimeline(
+  userId: string,
+  limit: number = 50,
+): Promise<UserTimelineEvent[]> {
+  try {
+    const { data, error } = await supabase.rpc(
+      "admin_get_user_timeline" as never,
+      {
+        p_target_user_id: userId,
+        p_limit: limit,
+      } as never,
+    );
+
+    if (!error && data) {
+      return (data as unknown as UserTimelineEvent[]) ?? [];
+    }
+  } catch (err) {
+    console.warn("admin_get_user_timeline RPC fallback:", err);
+  }
+
+  // Fallback: construct timeline from drops and restrictions
+  try {
+    const { data: drops } = await supabase
+      .from("drops")
+      .select("id, content, created_at, spark_count, echo_count, moderation_status")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    const { data: restrictions } = await supabase
+      .from("user_restrictions")
+      .select("id, type, reason, created_at, expires_at, is_active")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    const events: UserTimelineEvent[] = [];
+
+    (drops ?? []).forEach((d) => {
+      events.push({
+        event_type: "drop_published",
+        description: `Published drop: ${d.content?.slice(0, 45) || ""}`,
+        created_at: d.created_at,
+        entity_id: d.id,
+        metadata: {
+          content: d.content,
+          sparks: d.spark_count,
+          echoes: d.echo_count,
+          status: d.moderation_status,
+        },
+      });
+    });
+
+    (restrictions ?? []).forEach((r) => {
+      events.push({
+        event_type: `restriction_${r.type}`,
+        description: `Administrative ${r.type} issued: ${r.reason}`,
+        created_at: r.created_at,
+        entity_id: r.id,
+        metadata: {
+          type: r.type,
+          reason: r.reason,
+          expires_at: r.expires_at,
+          is_active: r.is_active,
+        },
+      });
+    });
+
+    events.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return events.slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchUserOrbitNetwork(
+  userId: string,
+  type: "orbiters" | "orbiting" = "orbiters",
+  search: string = "",
+  page: number = 1,
+  limit: number = 20,
+): Promise<{ connections: UserNetworkConnection[]; totalCount: number }> {
+  try {
+    const { data, error } = await supabase.rpc(
+      "admin_get_user_network" as never,
+      {
+        p_target_user_id: userId,
+        p_type: type,
+        p_search: search.trim() || null,
+        p_page: page,
+        p_limit: limit,
+      } as never,
+    );
+
+    if (!error && data) {
+      const res = data as unknown as {
+        connections: UserNetworkConnection[];
+        total_count: number;
+      };
+      return {
+        connections: res.connections ?? [],
+        totalCount: res.total_count ?? 0,
+      };
+    }
+  } catch (err) {
+    console.warn("admin_get_user_network RPC fallback:", err);
+  }
+
+  // Fallback: direct query
+  try {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    if (type === "orbiters") {
+      const { data, count } = await supabase
+        .from("orbits")
+        .select(
+          `
+          created_at,
+          follower:profiles!orbits_follower_id_fkey(
+            id, username, display_name, avatar_emoji, avatar_color, bio, account_status, is_verified, followers_count, following_count
+          )
+        `,
+          { count: "exact" },
+        )
+        .eq("followed_id", userId)
+        .range(from, to)
+        .order("created_at", { ascending: false });
+
+      const connections: UserNetworkConnection[] = (
+        (data as unknown as Array<{ follower: UserNetworkConnection; created_at: string }>) ?? []
+      ).map((row) => ({
+        ...row.follower,
+        connected_at: row.created_at,
+        is_mutual: false,
+      }));
+
+      return { connections, totalCount: count ?? 0 };
+    } else {
+      const { data, count } = await supabase
+        .from("orbits")
+        .select(
+          `
+          created_at,
+          followed:profiles!orbits_followed_id_fkey(
+            id, username, display_name, avatar_emoji, avatar_color, bio, account_status, is_verified, followers_count, following_count
+          )
+        `,
+          { count: "exact" },
+        )
+        .eq("follower_id", userId)
+        .range(from, to)
+        .order("created_at", { ascending: false });
+
+      const connections: UserNetworkConnection[] = (
+        (data as unknown as Array<{ followed: UserNetworkConnection; created_at: string }>) ?? []
+      ).map((row) => ({
+        ...row.followed,
+        connected_at: row.created_at,
+        is_mutual: false,
+      }));
+
+      return { connections, totalCount: count ?? 0 };
+    }
+  } catch {
+    return { connections: [], totalCount: 0 };
+  }
+}
+
+export async function bulkRestrictUsers(params: {
+  userIds: string[];
+  type: "warning" | "suspension" | "ban";
+  reason: string;
+  notes?: string | null | undefined;
+  durationHours?: number | null | undefined;
+}): Promise<{ processedCount: number; status: string }> {
+  try {
+    const { data, error } = await supabase.rpc(
+      "admin_bulk_restrict_users" as never,
+      {
+        p_user_ids: params.userIds,
+        p_type: params.type,
+        p_reason: params.reason,
+        p_notes: params.notes ?? null,
+        p_duration_hours: params.durationHours ?? 24,
+      } as never,
+    );
+
+    if (error) throw error;
+    const res = data as unknown as { processed_count: number; status: string };
+    return {
+      processedCount: res.processed_count ?? 0,
+      status: res.status ?? "success",
+    };
+  } catch (err) {
+    console.error("bulkRestrictUsers error:", err);
+    throw err;
+  }
+}
+
+export async function logUserExport(
+  exportCount: number,
+  filters: Record<string, unknown> = {},
+): Promise<void> {
+  try {
+    await supabase.rpc(
+      "admin_log_user_export" as never,
+      {
+        p_export_count: exportCount,
+        p_filters: filters,
+      } as never,
+    );
+  } catch (err) {
+    console.warn("logUserExport error:", err);
+  }
+}
+
+export function exportUsersToCsv(
+  users: AdminUserListItem[],
+  filename: string = "blurbbi-users-export.csv",
+): void {
+  const headers = [
+    "User ID",
+    "Username",
+    "Display Name",
+    "Account Status",
+    "Verified",
+    "Drops Count",
+    "Orbiters",
+    "Orbiting",
+    "Warning Count",
+    "Joined Date",
+    "Suspended Until",
+  ];
+
+  const escapeCsv = (str: unknown): string => {
+    if (str === null || str === undefined) return "";
+    const s = String(str);
+    if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  };
+
+  const rows = users.map((u) => [
+    escapeCsv(u.id),
+    escapeCsv(`@${u.username}`),
+    escapeCsv(u.display_name),
+    escapeCsv(u.account_status),
+    escapeCsv(u.is_verified ? "Yes" : "No"),
+    escapeCsv(u.drops_count ?? u.total_drops ?? 0),
+    escapeCsv(u.followers_count ?? 0),
+    escapeCsv(u.following_count ?? 0),
+    escapeCsv(u.warning_count ?? 0),
+    escapeCsv(new Date(u.created_at).toISOString()),
+    escapeCsv(u.suspended_until ? new Date(u.suspended_until).toISOString() : "N/A"),
+  ]);
+
+  const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // -----------------------------------------------------------------------------

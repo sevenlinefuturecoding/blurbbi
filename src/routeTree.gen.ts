@@ -33,6 +33,7 @@ import { Route as TTagRouteImport } from './routes/t.$tag'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as AuthenticatedOnboardedNotificationsRouteImport } from './routes/_authenticated/_onboarded/notifications'
 import { Route as AuthenticatedOnboardedSettingsRouteImport } from './routes/_authenticated/_onboarded/settings'
+import { Route as AdminUsersIdRouteImport } from './routes/admin/users.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -155,6 +156,11 @@ const AuthenticatedOnboardedSettingsRoute =
     path: '/settings',
     getParentRoute: () => AuthenticatedOnboardedRouteRoute,
   } as any)
+const AdminUsersIdRoute = AdminUsersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminUsersRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -172,13 +178,14 @@ export interface FileRoutesByFullPath {
   '/admin/reports': typeof AdminReportsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/drop/$id': typeof DropIdRoute
   '/t/$tag': typeof TTagRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/': typeof AdminIndexRoute
   '/notifications': typeof AuthenticatedOnboardedNotificationsRoute
   '/settings': typeof AuthenticatedOnboardedSettingsRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -195,13 +202,14 @@ export interface FileRoutesByTo {
   '/admin/reports': typeof AdminReportsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/drop/$id': typeof DropIdRoute
   '/t/$tag': typeof TTagRoute
   '/u/$username': typeof UUsernameRoute
   '/admin': typeof AdminIndexRoute
   '/notifications': typeof AuthenticatedOnboardedNotificationsRoute
   '/settings': typeof AuthenticatedOnboardedSettingsRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -222,13 +230,14 @@ export interface FileRoutesById {
   '/admin/reports': typeof AdminReportsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/settings': typeof AdminSettingsRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/drop/$id': typeof DropIdRoute
   '/t/$tag': typeof TTagRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/': typeof AdminIndexRoute
   '/_authenticated/_onboarded/notifications': typeof AuthenticatedOnboardedNotificationsRoute
   '/_authenticated/_onboarded/settings': typeof AuthenticatedOnboardedSettingsRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -255,6 +264,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/notifications'
     | '/settings'
+    | '/admin/users/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/notifications'
     | '/settings'
+    | '/admin/users/$id'
   id:
     | '__root__'
     | '/'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/_authenticated/_onboarded/notifications'
     | '/_authenticated/_onboarded/settings'
+    | '/admin/users/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -488,6 +500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOnboardedSettingsRouteImport
       parentRoute: typeof AuthenticatedOnboardedRouteRoute
     }
+    '/admin/users/$id': {
+      id: '/admin/users/$id'
+      path: '/$id'
+      fullPath: '/admin/users/$id'
+      preLoaderRoute: typeof AdminUsersIdRouteImport
+      parentRoute: typeof AdminUsersRoute
+    }
   }
 }
 
@@ -522,6 +541,18 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface AdminUsersRouteChildren {
+  AdminUsersIdRoute: typeof AdminUsersIdRoute
+}
+
+const AdminUsersRouteChildren: AdminUsersRouteChildren = {
+  AdminUsersIdRoute: AdminUsersIdRoute,
+}
+
+const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
+  AdminUsersRouteChildren,
+)
+
 interface AdminRouteRouteChildren {
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
@@ -532,7 +563,7 @@ interface AdminRouteRouteChildren {
   AdminReportsRoute: typeof AdminReportsRoute
   AdminRolesRoute: typeof AdminRolesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
-  AdminUsersRoute: typeof AdminUsersRoute
+  AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -546,7 +577,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminReportsRoute: AdminReportsRoute,
   AdminRolesRoute: AdminRolesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
-  AdminUsersRoute: AdminUsersRoute,
+  AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 

@@ -14,4 +14,3 @@ export const Route = createFileRoute("/admin/drops")({
 function AdminDropsRoute() {
   return <AdminDropsView />;
 }
-

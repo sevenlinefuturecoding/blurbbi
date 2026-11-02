@@ -14,4 +14,3 @@ export const Route = createFileRoute("/admin/moderation")({
 function AdminModerationRoute() {
   return <AdminModerationView />;
 }
-

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Search,
@@ -14,23 +15,37 @@ import {
   BadgeCheck,
   ChevronLeft,
   ChevronRight,
-  User,
+  Download,
+  Users,
+  UserCheck,
+  SlidersHorizontal,
+  ArrowUpDown,
+  MoreHorizontal,
+  Shield,
   Clock,
-  Sparkles,
-  MessageSquare,
-  Repeat2,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -42,31 +57,60 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BlurbiAvatar } from "@/components/blurbi/blurbi-avatar";
 import {
-  fetchAdminUsers,
-  fetchAdminUserDetail,
+  fetchAdminUsersAdvanced,
   restrictUser,
   restoreUser,
   verifyUser,
+  bulkRestrictUsers,
+  exportUsersToCsv,
+  getCurrentAdminRole,
   type AdminUserListItem,
-  type AdminUserDetail,
   type AccountStatus,
+  type AdminRole,
 } from "@/lib/admin";
 import { timeAgo } from "@/lib/blurbi";
 
 export function AdminUsersView() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
+
+  // Admin Role for Permissions
+  const { data: adminRole } = useQuery<AdminRole | null>({
+    queryKey: ["admin", "my-role"],
+    queryFn: getCurrentAdminRole,
+  });
+
+  const canRestrict =
+    adminRole === "super_admin" || adminRole === "admin" || adminRole === "moderator";
+  const canBan = adminRole === "super_admin" || adminRole === "admin";
+  const canVerify = adminRole === "super_admin" || adminRole === "admin";
+  const canExport = adminRole !== "analyst";
 
   // Filter & Pagination State
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<AccountStatus | "all">("all");
   const [verified, setVerified] = useState<boolean | "all">("all");
+  const [registeredWithin, setRegisteredWithin] = useState<"all" | "today" | "7d" | "30d" | "90d">(
+    "all",
+  );
+  const [sortBy, setSortBy] = useState<
+    "created_at" | "followers_count" | "following_count" | "username"
+  >("created_at");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const limit = 15;
 
-  // Selected User for Detail Drawer / Actions
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  // Bulk Selection State
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<"warning" | "suspension" | "ban">(
+    "suspension",
+  );
+  const [bulkReason, setBulkReason] = useState("");
+  const [bulkNotes, setBulkNotes] = useState("");
+  const [bulkDurationHours, setBulkDurationHours] = useState(24);
 
-  // Restriction Dialog State
+  // Single Action Dialog State
   const [restrictDialogOpen, setRestrictDialogOpen] = useState(false);
   const [targetUser, setTargetUser] = useState<AdminUserListItem | null>(null);
   const [restrictionType, setRestrictionType] = useState<"warning" | "suspension" | "ban">(
@@ -81,24 +125,30 @@ export function AdminUsersView() {
   const [restoreReason, setRestoreReason] = useState("");
 
   // Query Users List
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin", "users", { search, status, verified, page, limit }],
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: [
+      "admin",
+      "users-advanced",
+      { search, status, verified, registeredWithin, sortBy, sortOrder, page, limit },
+    ],
     queryFn: () =>
-      fetchAdminUsers({
+      fetchAdminUsersAdvanced({
         search,
         status,
         verified,
+        registeredWithin,
+        sortBy,
+        sortOrder,
         page,
         limit,
       }),
   });
 
-  // Query User Detail
-  const userDetailQuery = useQuery({
-    queryKey: ["admin", "user-detail", selectedUserId],
-    enabled: !!selectedUserId,
-    queryFn: () => fetchAdminUserDetail(selectedUserId!),
-  });
+  const users = data?.users ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const activeCount = data?.activeCount ?? 0;
+  const restrictedCount = data?.restrictedCount ?? 0;
+  const totalPages = Math.max(Math.ceil(totalCount / limit), 1);
 
   // Mutations
   const restrictMutation = useMutation({
@@ -108,10 +158,8 @@ export function AdminUsersView() {
       setRestrictDialogOpen(false);
       setRestrictionReason("");
       setRestrictionNotes("");
-      qc.invalidateQueries({ queryKey: ["admin", "users"] });
-      if (selectedUserId) {
-        qc.invalidateQueries({ queryKey: ["admin", "user-detail", selectedUserId] });
-      }
+      setTargetUser(null);
+      qc.invalidateQueries({ queryKey: ["admin", "users-advanced"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to record restriction");
@@ -122,16 +170,14 @@ export function AdminUsersView() {
     mutationFn: ({ userId, reason }: { userId: string; reason: string }) =>
       restoreUser(userId, reason),
     onSuccess: () => {
-      toast.success("User account restored to active status");
+      toast.success("Account status restored to active");
       setRestoreDialogOpen(false);
       setRestoreReason("");
-      qc.invalidateQueries({ queryKey: ["admin", "users"] });
-      if (selectedUserId) {
-        qc.invalidateQueries({ queryKey: ["admin", "user-detail", selectedUserId] });
-      }
+      setTargetUser(null);
+      qc.invalidateQueries({ queryKey: ["admin", "users-advanced"] });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to restore user");
+      toast.error(err instanceof Error ? err.message : "Failed to restore account");
     },
   });
 
@@ -139,592 +185,935 @@ export function AdminUsersView() {
     mutationFn: ({ userId, isVerified }: { userId: string; isVerified: boolean }) =>
       verifyUser(userId, isVerified),
     onSuccess: (_, vars) => {
-      toast.success(`User verification ${vars.isVerified ? "granted" : "revoked"}`);
-      qc.invalidateQueries({ queryKey: ["admin", "users"] });
-      if (selectedUserId) {
-        qc.invalidateQueries({ queryKey: ["admin", "user-detail", selectedUserId] });
-      }
+      toast.success(`Verification status ${vars.isVerified ? "granted" : "revoked"}`);
+      qc.invalidateQueries({ queryKey: ["admin", "users-advanced"] });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Verification update failed");
+      toast.error(err instanceof Error ? err.message : "Failed to update verification status");
     },
   });
 
-  const users = data?.users ?? [];
-  const totalCount = data?.totalCount ?? 0;
-  const totalPages = Math.max(Math.ceil(totalCount / limit), 1);
+  const bulkRestrictMutation = useMutation({
+    mutationFn: bulkRestrictUsers,
+    onSuccess: (res) => {
+      toast.success(
+        `Bulk ${bulkActionType} successfully applied to ${res.processedCount} accounts`,
+      );
+      setBulkDialogOpen(false);
+      setSelectedUserIds([]);
+      setBulkReason("");
+      setBulkNotes("");
+      qc.invalidateQueries({ queryKey: ["admin", "users-advanced"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to execute bulk restriction");
+    },
+  });
+
+  // Checkbox handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedUserIds(users.map((u) => u.id));
+    } else {
+      setSelectedUserIds([]);
+    }
+  };
+
+  const handleToggleRow = (userId: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
+    );
+  };
+
+  const isAllSelected = users.length > 0 && users.every((u) => selectedUserIds.includes(u.id));
+
+  // Export handlers
+  const handleExportFiltered = () => {
+    if (users.length === 0) {
+      toast.error("No users available to export in current filter view");
+      return;
+    }
+    exportUsersToCsv(users, `blurbbi-users-p${page}-${new Date().toISOString().slice(0, 10)}.csv`);
+    toast.success(`Exported ${users.length} users to CSV`);
+  };
+
+  const handleExportSelected = () => {
+    const selected = users.filter((u) => selectedUserIds.includes(u.id));
+    if (selected.length === 0) {
+      toast.error("No users selected to export");
+      return;
+    }
+    exportUsersToCsv(selected, `blurbbi-users-selected-${selected.length}.csv`);
+    toast.success(`Exported ${selected.length} selected users to CSV`);
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-            User Management
+          <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl flex items-center gap-2">
+            <Users className="h-6 w-6 text-primary" />
+            User Management & Intelligence
           </h1>
           <p className="text-xs text-muted-foreground sm:text-sm">
-            Search, inspect, verify, warn, suspend, or ban registered blurbers.
+            Centralized directory, security restrictions, account intelligence, and Orbit networks.
           </p>
         </div>
-        <div className="text-xs text-muted-foreground font-mono">
-          Showing {users.length} of {totalCount} users
-        </div>
-      </div>
 
-      {/* Filter & Search Bar */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Search by username or display name..."
-            className="pl-9 bg-background h-10 text-sm"
-          />
-        </div>
-
+        {/* Header Badges & Export */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Status Filter */}
-          <Select
-            value={status}
-            onValueChange={(val) => {
-              setStatus(val as AccountStatus | "all");
-              setPage(1);
-            }}
+          <Badge variant="outline" className="text-xs font-mono py-1 px-2.5 gap-1.5 border-border">
+            <span className="text-muted-foreground">Total:</span>
+            <span className="font-bold text-foreground">{totalCount}</span>
+          </Badge>
+          <Badge
+            variant="outline"
+            className="text-xs font-mono py-1 px-2.5 gap-1.5 border-emerald-500/30 text-emerald-500 bg-emerald-500/5"
           >
-            <SelectTrigger className="w-[140px] h-10 bg-background text-xs">
-              <SelectValue placeholder="Status: All" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Status: All</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="warned">Warned</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
-              <SelectItem value="banned">Banned</SelectItem>
-            </SelectContent>
-          </Select>
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span>Active: {activeCount}</span>
+          </Badge>
+          <Badge
+            variant="outline"
+            className="text-xs font-mono py-1 px-2.5 gap-1.5 border-amber-500/30 text-amber-500 bg-amber-500/5"
+          >
+            <span>Restricted: {restrictedCount}</span>
+          </Badge>
 
-          {/* Verified Filter */}
-          <Select
-            value={String(verified)}
-            onValueChange={(val) => {
-              setVerified(val === "all" ? "all" : val === "true");
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-[140px] h-10 bg-background text-xs">
-              <SelectValue placeholder="Verified: All" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Verified: All</SelectItem>
-              <SelectItem value="true">Verified Only</SelectItem>
-              <SelectItem value="false">Unverified</SelectItem>
-            </SelectContent>
-          </Select>
+          {canExport && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportFiltered}
+              className="h-8 text-xs gap-1.5 shadow-sm"
+              title="Export current page to CSV"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export CSV
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Users Table */}
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      {/* Search & Filter Toolbar */}
+      <div className="rounded-2xl border border-border bg-card p-4 space-y-3 shadow-sm">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+          {/* Search Input */}
+          <div className="relative lg:col-span-2">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search by @username or display name..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="pl-9 text-xs h-9 bg-background"
+            />
+          </div>
+
+          {/* Account Status Filter */}
+          <div>
+            <Select
+              value={status}
+              onValueChange={(val) => {
+                setStatus(val as AccountStatus | "all");
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="text-xs h-9 bg-background">
+                <SelectValue placeholder="Status: All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="active">Active Only</SelectItem>
+                <SelectItem value="warned">Warned</SelectItem>
+                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="banned">Banned</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Verification Filter */}
+          <div>
+            <Select
+              value={verified === "all" ? "all" : verified ? "verified" : "unverified"}
+              onValueChange={(val) => {
+                setVerified(val === "all" ? "all" : val === "verified");
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="text-xs h-9 bg-background">
+                <SelectValue placeholder="Verification" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Verification</SelectItem>
+                <SelectItem value="verified">Verified Only</SelectItem>
+                <SelectItem value="unverified">Unverified Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Registration Date Filter */}
+          <div>
+            <Select
+              value={registeredWithin}
+              onValueChange={(val) => {
+                setRegisteredWithin(val as typeof registeredWithin);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="text-xs h-9 bg-background">
+                <SelectValue placeholder="Registration Date" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="today">Joined Today</SelectItem>
+                <SelectItem value="7d">Past 7 Days</SelectItem>
+                <SelectItem value="30d">Past 30 Days</SelectItem>
+                <SelectItem value="90d">Past 90 Days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Secondary Toolbar: Sorting & Reset */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/60 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-foreground">Sort By:</span>
+            <button
+              onClick={() => {
+                setSortBy("created_at");
+                setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+              }}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors ${
+                sortBy === "created_at"
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-border hover:bg-muted"
+              }`}
+            >
+              Joined Date
+              <ArrowUpDown className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => {
+                setSortBy("followers_count");
+                setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+              }}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors ${
+                sortBy === "followers_count"
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-border hover:bg-muted"
+              }`}
+            >
+              Orbiters
+              <ArrowUpDown className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => {
+                setSortBy("username");
+                setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+              }}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors ${
+                sortBy === "username"
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-border hover:bg-muted"
+              }`}
+            >
+              Username
+              <ArrowUpDown className="h-3 w-3" />
+            </button>
+          </div>
+
+          {(search || status !== "all" || verified !== "all" || registeredWithin !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearch("");
+                setStatus("all");
+                setVerified("all");
+                setRegisteredWithin("all");
+                setPage(1);
+              }}
+              className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Reset Filters
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Bulk Action Bar (when rows selected) */}
+      {selectedUserIds.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-primary/40 bg-primary/5 shadow-sm animate-in fade-in">
+          <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+              {selectedUserIds.length}
+            </span>
+            <span>Accounts selected</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {canExport && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportSelected}
+                className="h-7 text-xs gap-1.5 bg-background"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export Selected
+              </Button>
+            )}
+
+            {canRestrict && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setBulkDialogOpen(true)}
+                className="h-7 text-xs gap-1.5"
+              >
+                <ShieldAlert className="h-3.5 w-3.5" />
+                Bulk Restrict
+              </Button>
+            )}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedUserIds([])}
+              className="h-7 text-xs text-muted-foreground"
+            >
+              Deselect All
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Users Data Table */}
+      <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-border text-xs text-muted-foreground bg-muted/30">
-                <th className="py-3 px-4">User</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Verification</th>
-                <th className="py-3 px-4">Orbiters</th>
-                <th className="py-3 px-4">Joined</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+              <tr className="border-b border-border bg-muted/40 text-muted-foreground font-medium">
+                <th className="py-3 px-4 w-10">
+                  <Checkbox
+                    checked={isAllSelected}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all on this page"
+                  />
+                </th>
+                <th className="py-3 px-3">Blurber</th>
+                <th className="py-3 px-3">Status</th>
+                <th className="py-3 px-3">Verification</th>
+                <th className="py-3 px-3 text-right">Drops</th>
+                <th className="py-3 px-3 text-right">Orbiters</th>
+                <th className="py-3 px-3">Joined</th>
+                <th className="py-3 px-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-border/60">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-sm text-muted-foreground">
-                    Loading users directory...
+                  <td colSpan={8} className="py-12 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      <span>Loading user directory...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : isError ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-destructive">
+                    <AlertTriangle className="h-6 w-6 mx-auto mb-2 opacity-80" />
+                    <span>Failed to load user directory. Please refresh.</span>
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-sm text-muted-foreground">
-                    No blurbers match the search criteria.
+                  <td colSpan={8} className="py-12 text-center text-muted-foreground">
+                    <UserX className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                    <p className="font-medium text-foreground">No accounts found</p>
+                    <p className="text-[11px] mt-0.5">Try adjusting your search or filters.</p>
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
-                  <tr
-                    key={user.id}
-                    className="border-b border-border/50 hover:bg-muted/30 transition-colors"
-                  >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <BlurbiAvatar
-                          emoji={user.avatar_emoji}
-                          color={user.avatar_color}
-                          size="md"
+                users.map((u) => {
+                  const isSelected = selectedUserIds.includes(u.id);
+                  return (
+                    <tr
+                      key={u.id}
+                      className={`hover:bg-muted/30 transition-colors ${
+                        isSelected ? "bg-primary/5" : ""
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <td className="py-3 px-4">
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => handleToggleRow(u.id)}
+                          aria-label={`Select ${u.username}`}
                         />
-                        <div className="min-w-0">
-                          <div className="font-medium text-foreground truncate flex items-center gap-1.5">
-                            <span>{user.display_name || user.username}</span>
-                            {user.is_verified && (
-                              <BadgeCheck className="h-4 w-4 text-primary fill-primary/20 shrink-0" />
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground font-mono">
-                            @{user.username}
+                      </td>
+
+                      {/* User Profile */}
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2.5">
+                          <BlurbiAvatar emoji={u.avatar_emoji} color={u.avatar_color} size="sm" />
+                          <div className="min-w-0">
+                            <div className="font-semibold text-foreground truncate max-w-[160px] flex items-center gap-1">
+                              <span>{u.display_name || u.username}</span>
+                              {u.is_verified && (
+                                <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+                              )}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground font-mono truncate">
+                              @{u.username}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="py-3 px-4">
-                      <Badge
-                        variant={
-                          user.account_status === "active"
-                            ? "secondary"
-                            : user.account_status === "warned"
-                              ? "outline"
-                              : "destructive"
-                        }
-                        className="text-[11px] capitalize font-mono"
-                      >
-                        {user.account_status}
-                        {user.warning_count > 0 && user.account_status !== "banned" && (
-                          <span className="ml-1 text-[10px]">({user.warning_count}w)</span>
+                      {/* Status */}
+                      <td className="py-3 px-3">
+                        <StatusBadge status={u.account_status} suspendedUntil={u.suspended_until} />
+                        {u.warning_count > 0 && u.account_status !== "banned" && (
+                          <span className="block text-[10px] text-amber-500 font-mono mt-0.5">
+                            {u.warning_count} warning{u.warning_count > 1 ? "s" : ""}
+                          </span>
                         )}
-                      </Badge>
-                    </td>
+                      </td>
 
-                    <td className="py-3 px-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          verifyMutation.mutate({
-                            userId: user.id,
-                            isVerified: !user.is_verified,
-                          })
-                        }
-                        className="h-7 text-xs gap-1"
-                      >
-                        <BadgeCheck
-                          className={`h-4 w-4 ${
-                            user.is_verified
-                              ? "text-primary fill-primary/20"
-                              : "text-muted-foreground"
-                          }`}
-                        />
-                        {user.is_verified ? "Verified" : "Unverified"}
-                      </Button>
-                    </td>
-
-                    <td className="py-3 px-4 font-mono text-xs">{user.followers_count}</td>
-
-                    <td className="py-3 px-4 text-xs text-muted-foreground font-mono">
-                      {timeAgo(user.created_at)}
-                    </td>
-
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedUserId(user.id)}
-                          className="h-8 text-xs gap-1"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          Inspect
-                        </Button>
-
-                        {user.account_status === "suspended" || user.account_status === "banned" ? (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => {
-                              setTargetUser(user);
-                              setRestoreDialogOpen(true);
-                            }}
-                            className="h-8 text-xs text-emerald-500 hover:text-emerald-400 gap-1"
+                      {/* Verification */}
+                      <td className="py-3 px-3">
+                        {u.is_verified ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] border-primary/30 text-primary gap-1"
                           >
-                            <RotateCcw className="h-3.5 w-3.5" />
-                            Restore
-                          </Button>
+                            <BadgeCheck className="h-3 w-3" />
+                            Verified
+                          </Badge>
                         ) : (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => {
-                              setTargetUser(user);
-                              setRestrictDialogOpen(true);
-                            }}
-                            className="h-8 text-xs gap-1"
-                          >
-                            <ShieldAlert className="h-3.5 w-3.5" />
-                            Restrict
-                          </Button>
+                          <span className="text-muted-foreground text-[11px]">Unverified</span>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+
+                      {/* Drops */}
+                      <td className="py-3 px-3 text-right font-mono font-medium">
+                        {(u.drops_count ?? u.total_drops ?? 0).toLocaleString()}
+                      </td>
+
+                      {/* Orbiters */}
+                      <td className="py-3 px-3 text-right font-mono text-muted-foreground">
+                        {(u.followers_count ?? 0).toLocaleString()}
+                      </td>
+
+                      {/* Joined Date */}
+                      <td className="py-3 px-3 text-muted-foreground">
+                        <span title={new Date(u.created_at).toLocaleString()}>
+                          {timeAgo(u.created_at)}
+                        </span>
+                      </td>
+
+                      {/* Actions Menu */}
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Inspect Shortcut Button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate({ to: `/admin/users/${u.id}` })}
+                            className="h-7 px-2 text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10"
+                            title="Open detailed user intelligence workspace"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            Inspect
+                          </Button>
+
+                          {/* Overflow Menu */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                <MoreHorizontal className="h-3.5 w-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="text-xs w-48">
+                              <DropdownMenuLabel>Account Actions</DropdownMenuLabel>
+                              <DropdownMenuItem
+                                onClick={() => navigate({ to: `/admin/users/${u.id}` })}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <Eye className="h-3.5 w-3.5 text-primary" />
+                                Inspect Account
+                              </DropdownMenuItem>
+
+                              <DropdownMenuItem asChild>
+                                <a
+                                  href={`/u/${u.username}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="gap-2 cursor-pointer flex items-center"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                                  View Public Profile
+                                </a>
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator />
+
+                              {/* Safety / Restrict options */}
+                              {canRestrict && u.account_status !== "banned" && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setTargetUser(u);
+                                      setRestrictionType("warning");
+                                      setRestrictDialogOpen(true);
+                                    }}
+                                    className="gap-2 cursor-pointer text-amber-500 focus:text-amber-500"
+                                  >
+                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                    Issue Warning
+                                  </DropdownMenuItem>
+
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setTargetUser(u);
+                                      setRestrictionType("suspension");
+                                      setRestrictDialogOpen(true);
+                                    }}
+                                    className="gap-2 cursor-pointer text-destructive focus:text-destructive"
+                                  >
+                                    <Clock className="h-3.5 w-3.5" />
+                                    Suspend Account
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+
+                              {canBan && u.account_status !== "banned" && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setTargetUser(u);
+                                    setRestrictionType("ban");
+                                    setRestrictDialogOpen(true);
+                                  }}
+                                  className="gap-2 cursor-pointer text-destructive focus:text-destructive font-medium"
+                                >
+                                  <UserX className="h-3.5 w-3.5" />
+                                  Permanent Ban
+                                </DropdownMenuItem>
+                              )}
+
+                              {canRestrict && u.account_status !== "active" && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setTargetUser(u);
+                                    setRestoreDialogOpen(true);
+                                  }}
+                                  className="gap-2 cursor-pointer text-emerald-500 focus:text-emerald-500"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  Restore to Active
+                                </DropdownMenuItem>
+                              )}
+
+                              {canVerify && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      verifyMutation.mutate({
+                                        userId: u.id,
+                                        isVerified: !u.is_verified,
+                                      })
+                                    }
+                                    className="gap-2 cursor-pointer"
+                                  >
+                                    <BadgeCheck className="h-3.5 w-3.5 text-primary" />
+                                    {u.is_verified ? "Revoke Verification" : "Grant Verification"}
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Pagination Bar */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-border p-4 text-xs text-muted-foreground">
-            <div>
-              Page {page} of {totalPages}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                disabled={page <= 1}
-                className="h-8 text-xs"
-              >
-                <ChevronLeft className="h-3.5 w-3.5 mr-1" />
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                disabled={page >= totalPages}
-                className="h-8 text-xs"
-              >
-                Next
-                <ChevronRight className="h-3.5 w-3.5 ml-1" />
-              </Button>
-            </div>
+        {/* Server-Side Pagination Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-border bg-card text-xs text-muted-foreground">
+          <div>
+            Showing <span className="font-medium text-foreground">{users.length}</span> of{" "}
+            <span className="font-medium text-foreground">{totalCount}</span> accounts
           </div>
-        )}
+
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1 || isLoading}
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              className="h-8 text-xs gap-1"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Previous
+            </Button>
+
+            <span className="px-3 font-mono text-[11px]">
+              Page {page} of {totalPages}
+            </span>
+
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages || isLoading}
+              onClick={() => setPage((p) => p + 1)}
+              className="h-8 text-xs gap-1"
+            >
+              Next
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* User Inspection Modal */}
-      <Dialog open={!!selectedUserId} onOpenChange={(open) => !open && setSelectedUserId(null)}>
-        <DialogContent className="max-w-2xl bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Blurber Profile Inspection</span>
-              {userDetailQuery.data?.is_verified && (
-                <Badge variant="outline" className="text-primary border-primary/30 text-xs">
-                  Verified Creator
-                </Badge>
+      {/* Single Account Restrict Dialog */}
+      {targetUser && (
+        <Dialog open={restrictDialogOpen} onOpenChange={setRestrictDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <ShieldAlert className="h-5 w-5 text-destructive" />
+                Restrict Account: @{targetUser.username}
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                Administrative restriction actions are enforced at the database level and recorded
+                to the immutable audit trail.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2 text-xs">
+              <div className="space-y-1.5">
+                <Label htmlFor="restriction-type">Action Type</Label>
+                <Select
+                  value={restrictionType}
+                  onValueChange={(val) =>
+                    setRestrictionType(val as "warning" | "suspension" | "ban")
+                  }
+                >
+                  <SelectTrigger id="restriction-type" className="text-xs h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="warning">Official Warning</SelectItem>
+                    <SelectItem value="suspension">Temporary Suspension</SelectItem>
+                    {canBan && <SelectItem value="ban">Permanent Ban</SelectItem>}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {restrictionType === "suspension" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="suspension-duration">Suspension Duration (Hours)</Label>
+                  <Input
+                    id="suspension-duration"
+                    type="number"
+                    min="1"
+                    max="720"
+                    value={suspensionDuration}
+                    onChange={(e) => setSuspensionDuration(parseInt(e.target.value) || 24)}
+                    className="text-xs h-9"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Common intervals: 24h (1 day), 72h (3 days), 168h (1 week).
+                  </p>
+                </div>
               )}
-            </DialogTitle>
-          </DialogHeader>
 
-          {userDetailQuery.isLoading ? (
-            <div className="py-12 text-center text-xs text-muted-foreground">
-              Loading profile details...
-            </div>
-          ) : userDetailQuery.data ? (
-            <div className="space-y-5">
-              {/* Profile Card Header */}
-              <div className="flex items-start gap-4 rounded-xl bg-muted/40 p-4 border border-border/70">
-                <BlurbiAvatar
-                  emoji={userDetailQuery.data.avatar_emoji}
-                  color={userDetailQuery.data.avatar_color}
-                  size="lg"
+              <div className="space-y-1.5">
+                <Label htmlFor="restriction-reason">Mandatory Reason (Audited)</Label>
+                <Input
+                  id="restriction-reason"
+                  placeholder="e.g. Terms violation, targeted spam, harassment"
+                  value={restrictionReason}
+                  onChange={(e) => setRestrictionReason(e.target.value)}
+                  className="text-xs h-9"
+                  required
                 />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-base text-foreground">
-                      {userDetailQuery.data.display_name || userDetailQuery.data.username}
-                    </h3>
-                    <Badge
-                      variant={
-                        userDetailQuery.data.account_status === "active"
-                          ? "secondary"
-                          : "destructive"
-                      }
-                      className="text-[10px] font-mono capitalize"
-                    >
-                      {userDetailQuery.data.account_status}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground font-mono">
-                    @{userDetailQuery.data.username}
-                  </div>
-                  {userDetailQuery.data.bio && (
-                    <p className="mt-2 text-xs text-foreground/90">{userDetailQuery.data.bio}</p>
-                  )}
-                  <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-muted-foreground">
-                    <span>
-                      Joined: {new Date(userDetailQuery.data.created_at).toLocaleDateString()}
-                    </span>
-                    {userDetailQuery.data.location && (
-                      <span>Location: {userDetailQuery.data.location}</span>
-                    )}
-                    {userDetailQuery.data.website && (
-                      <a
-                        href={userDetailQuery.data.website}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        {userDetailQuery.data.website}
-                      </a>
-                    )}
-                  </div>
-                </div>
               </div>
 
-              {/* Engagement Stats Grid */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 font-mono text-center">
-                <div className="rounded-xl border border-border p-3">
-                  <div className="text-xs text-muted-foreground">Total Drops</div>
-                  <div className="text-xl font-bold mt-1">{userDetailQuery.data.total_drops}</div>
-                </div>
-                <div className="rounded-xl border border-border p-3">
-                  <div className="text-xs text-muted-foreground">Sparks Received</div>
-                  <div className="text-xl font-bold mt-1 text-primary">
-                    +{userDetailQuery.data.total_sparks_received}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-border p-3">
-                  <div className="text-xs text-muted-foreground">Orbiters</div>
-                  <div className="text-xl font-bold mt-1">
-                    {userDetailQuery.data.followers_count}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-border p-3">
-                  <div className="text-xs text-muted-foreground">Orbiting</div>
-                  <div className="text-xl font-bold mt-1">
-                    {userDetailQuery.data.following_count}
-                  </div>
-                </div>
-              </div>
-
-              {/* Restriction & Moderation History */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Restriction & Warning History ({userDetailQuery.data.restrictions.length})
-                </h4>
-
-                {userDetailQuery.data.restrictions.length === 0 ? (
-                  <div className="rounded-xl border border-border/60 p-4 text-center text-xs text-muted-foreground">
-                    Clean record: No warnings or restrictions have been issued for this account.
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {userDetailQuery.data.restrictions.map((res) => (
-                      <div
-                        key={res.id}
-                        className={`rounded-lg border p-3 text-xs ${
-                          res.is_active
-                            ? "border-destructive/40 bg-destructive/5"
-                            : "border-border/60 bg-muted/20 opacity-70"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold uppercase text-destructive font-mono text-[10px]">
-                            {res.type}
-                          </span>
-                          <span className="text-muted-foreground font-mono">
-                            {timeAgo(res.created_at)}
-                          </span>
-                        </div>
-                        <div className="mt-1 font-medium">{res.reason}</div>
-                        {res.internal_notes && (
-                          <div className="mt-0.5 text-muted-foreground italic">
-                            Notes: &quot;{res.internal_notes}&quot;
-                          </div>
-                        )}
-                        {res.expires_at && (
-                          <div className="mt-1 text-[11px] text-muted-foreground font-mono">
-                            Expires: {new Date(res.expires_at).toLocaleString()}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-2 flex justify-end gap-2 border-t border-border">
-                <Button variant="outline" size="sm" onClick={() => setSelectedUserId(null)}>
-                  Close
-                </Button>
-                {userDetailQuery.data.account_status === "active" ||
-                userDetailQuery.data.account_status === "warned" ? (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      setTargetUser(userDetailQuery.data as AdminUserListItem);
-                      setRestrictDialogOpen(true);
-                    }}
-                  >
-                    Restrict Account
-                  </Button>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      setTargetUser(userDetailQuery.data as AdminUserListItem);
-                      setRestoreDialogOpen(true);
-                    }}
-                    className="text-emerald-500"
-                  >
-                    Restore Account
-                  </Button>
-                )}
+              <div className="space-y-1.5">
+                <Label htmlFor="restriction-notes">Internal Administrator Notes (Optional)</Label>
+                <Textarea
+                  id="restriction-notes"
+                  placeholder="Additional context for other moderators..."
+                  value={restrictionNotes}
+                  onChange={(e) => setRestrictionNotes(e.target.value)}
+                  className="text-xs min-h-[60px]"
+                />
               </div>
             </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
 
-      {/* Restrict User Dialog (Warn, Suspend, Ban) */}
-      <Dialog open={restrictDialogOpen} onOpenChange={setRestrictDialogOpen}>
-        <DialogContent className="max-w-md bg-card border-border">
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRestrictDialogOpen(false)}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={!restrictionReason.trim() || restrictMutation.isPending}
+                onClick={() =>
+                  restrictMutation.mutate({
+                    userId: targetUser.id,
+                    type: restrictionType,
+                    reason: restrictionReason.trim(),
+                    notes: restrictionNotes.trim() || null,
+                    durationHours: restrictionType === "suspension" ? suspensionDuration : null,
+                  })
+                }
+                className="text-xs gap-1.5"
+              >
+                {restrictMutation.isPending ? "Applying..." : `Execute ${restrictionType}`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Restore Account Dialog */}
+      {targetUser && (
+        <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base text-emerald-500">
+                <CheckCircle2 className="h-5 w-5" />
+                Restore Account: @{targetUser.username}
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                Restoring clears all active suspensions and bans, returning the account to Active
+                status.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 py-2 text-xs">
+              <div className="space-y-1.5">
+                <Label htmlFor="restore-reason">Restoration Reason (Mandatory Audit)</Label>
+                <Input
+                  id="restore-reason"
+                  placeholder="e.g. Appeal approved, mistake rectified, restriction served"
+                  value={restoreReason}
+                  onChange={(e) => setRestoreReason(e.target.value)}
+                  className="text-xs h-9"
+                  required
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRestoreDialogOpen(false)}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={!restoreReason.trim() || restoreMutation.isPending}
+                onClick={() =>
+                  restoreMutation.mutate({
+                    userId: targetUser.id,
+                    reason: restoreReason.trim(),
+                  })
+                }
+                className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {restoreMutation.isPending ? "Restoring..." : "Restore Account"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Bulk Restrict Modal */}
+      <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
+            <DialogTitle className="flex items-center gap-2 text-base text-destructive">
               <ShieldAlert className="h-5 w-5" />
-              <span>Restrict User: @{targetUser?.username}</span>
+              Bulk Restrict {selectedUserIds.length} Accounts
             </DialogTitle>
+            <DialogDescription className="text-xs">
+              This action will individually restrict each of the selected accounts and log an
+              individual entry to the audit trail.
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div>
-              <Label className="text-xs">Restriction Action</Label>
+          <div className="space-y-4 py-2 text-xs">
+            <div className="p-3 rounded-xl border border-destructive/20 bg-destructive/5 text-destructive space-y-1 text-xs">
+              <span className="font-semibold block">Preview of affected accounts:</span>
+              <div className="max-h-20 overflow-y-auto font-mono text-[11px] space-y-0.5">
+                {users
+                  .filter((u) => selectedUserIds.includes(u.id))
+                  .map((u) => (
+                    <div key={u.id}>
+                      • @{u.username} ({u.display_name})
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="bulk-type">Bulk Action Type</Label>
               <Select
-                value={restrictionType}
-                onValueChange={(val) => setRestrictionType(val as "warning" | "suspension" | "ban")}
+                value={bulkActionType}
+                onValueChange={(val) => setBulkActionType(val as "warning" | "suspension" | "ban")}
               >
-                <SelectTrigger className="mt-1.5 bg-background">
+                <SelectTrigger id="bulk-type" className="text-xs h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="warning">Official Warning (Informative notice)</SelectItem>
-                  <SelectItem value="suspension">Temporary Suspension (Time-bound lock)</SelectItem>
-                  <SelectItem value="ban">Permanent Ban (Complete lock)</SelectItem>
+                  <SelectItem value="warning">Bulk Warning</SelectItem>
+                  <SelectItem value="suspension">Bulk Temporary Suspension</SelectItem>
+                  {canBan && <SelectItem value="ban">Bulk Permanent Ban</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
 
-            {restrictionType === "suspension" && (
-              <div>
-                <Label className="text-xs">Suspension Duration</Label>
-                <Select
-                  value={String(suspensionDuration)}
-                  onValueChange={(val) => setSuspensionDuration(Number(val))}
-                >
-                  <SelectTrigger className="mt-1.5 bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="24">24 Hours</SelectItem>
-                    <SelectItem value="72">72 Hours (3 Days)</SelectItem>
-                    <SelectItem value="168">7 Days (1 Week)</SelectItem>
-                    <SelectItem value="720">30 Days (1 Month)</SelectItem>
-                  </SelectContent>
-                </Select>
+            {bulkActionType === "suspension" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="bulk-duration">Suspension Duration (Hours)</Label>
+                <Input
+                  id="bulk-duration"
+                  type="number"
+                  min="1"
+                  max="720"
+                  value={bulkDurationHours}
+                  onChange={(e) => setBulkDurationHours(parseInt(e.target.value) || 24)}
+                  className="text-xs h-9"
+                />
               </div>
             )}
 
-            <div>
-              <Label className="text-xs">Official Reason (Required)</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="bulk-reason">Mandatory Operational Reason</Label>
               <Input
-                value={restrictionReason}
-                onChange={(e) => setRestrictionReason(e.target.value)}
-                placeholder="e.g. Repeated harassment, spamming links..."
-                className="mt-1.5 bg-background text-sm"
+                id="bulk-reason"
+                placeholder="e.g. Coordinated spam wave, botnet activity"
+                value={bulkReason}
+                onChange={(e) => setBulkReason(e.target.value)}
+                className="text-xs h-9"
+                required
               />
             </div>
 
-            <div>
-              <Label className="text-xs">Internal Moderator Notes (Optional)</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="bulk-notes">Internal Notes</Label>
               <Textarea
-                value={restrictionNotes}
-                onChange={(e) => setRestrictionNotes(e.target.value)}
-                placeholder="Internal context for other administrators..."
-                className="mt-1.5 bg-background text-sm min-h-[70px]"
+                id="bulk-notes"
+                placeholder="Additional audit context..."
+                value={bulkNotes}
+                onChange={(e) => setBulkNotes(e.target.value)}
+                className="text-xs min-h-[50px]"
               />
             </div>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setRestrictDialogOpen(false)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBulkDialogOpen(false)}
+              className="text-xs"
+            >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              disabled={!restrictionReason.trim() || restrictMutation.isPending}
-              onClick={() => {
-                if (!targetUser) return;
-                restrictMutation.mutate({
-                  userId: targetUser.id,
-                  type: restrictionType,
-                  reason: restrictionReason,
-                  notes: restrictionNotes,
-                  durationHours: restrictionType === "suspension" ? suspensionDuration : undefined,
-                });
-              }}
+              size="sm"
+              disabled={!bulkReason.trim() || bulkRestrictMutation.isPending}
+              onClick={() =>
+                bulkRestrictMutation.mutate({
+                  userIds: selectedUserIds,
+                  type: bulkActionType,
+                  reason: bulkReason.trim(),
+                  notes: bulkNotes.trim() || null,
+                  durationHours: bulkActionType === "suspension" ? bulkDurationHours : null,
+                })
+              }
+              className="text-xs gap-1.5"
             >
-              {restrictMutation.isPending ? "Executing..." : `Confirm ${restrictionType}`}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Restore User Dialog */}
-      <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
-        <DialogContent className="max-w-md bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-emerald-500">
-              <RotateCcw className="h-5 w-5" />
-              <span>Restore Account: @{targetUser?.username}</span>
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <p className="text-xs text-muted-foreground">
-              This will restore the account status to <strong>active</strong>, re-enabling drop
-              creation and un-hiding their profile across platform feeds.
-            </p>
-
-            <div>
-              <Label className="text-xs">Reason for Restoration</Label>
-              <Input
-                value={restoreReason}
-                onChange={(e) => setRestoreReason(e.target.value)}
-                placeholder="e.g. Successful appeal, suspension time completed..."
-                className="mt-1.5 bg-background text-sm"
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setRestoreDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="default"
-              disabled={!restoreReason.trim() || restoreMutation.isPending}
-              onClick={() => {
-                if (!targetUser) return;
-                restoreMutation.mutate({
-                  userId: targetUser.id,
-                  reason: restoreReason,
-                });
-              }}
-            >
-              {restoreMutation.isPending ? "Restoring..." : "Confirm Restoration"}
+              {bulkRestrictMutation.isPending ? "Processing..." : `Confirm Bulk ${bulkActionType}`}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
+}
+
+function StatusBadge({
+  status,
+  suspendedUntil,
+}: {
+  status: AccountStatus;
+  suspendedUntil?: string | null;
+}) {
+  switch (status) {
+    case "active":
+      return (
+        <Badge
+          variant="outline"
+          className="border-emerald-500/30 text-emerald-500 bg-emerald-500/5 text-[10px] uppercase font-mono"
+        >
+          Active
+        </Badge>
+      );
+    case "warned":
+      return (
+        <Badge
+          variant="outline"
+          className="border-amber-500/30 text-amber-500 bg-amber-500/5 text-[10px] uppercase font-mono"
+        >
+          Warned
+        </Badge>
+      );
+    case "suspended":
+      return (
+        <Badge
+          variant="outline"
+          className="border-destructive/30 text-destructive bg-destructive/5 text-[10px] uppercase font-mono"
+        >
+          Suspended
+        </Badge>
+      );
+    case "banned":
+      return (
+        <Badge variant="destructive" className="text-[10px] uppercase font-mono">
+          Banned
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="secondary" className="text-[10px] uppercase font-mono">
+          {status}
+        </Badge>
+      );
+  }
 }

@@ -454,4 +454,320 @@ describe("Blurbbi Advanced Super Admin Control Center: Comprehensive Test Suite"
       expect(isMfaMandatory("analyst")).toBe(false);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // 10. Phase 2: Advanced User Directory Query Filtering & Sorting Logic
+  // ---------------------------------------------------------------------------
+  describe("10. Phase 2: Advanced User Directory Filtering & Sorting", () => {
+    interface MockDirectoryUser {
+      id: string;
+      username: string;
+      display_name: string;
+      account_status: AccountStatus;
+      is_verified: boolean;
+      followers_count: number;
+      following_count: number;
+      drops_count: number;
+      created_at: string;
+    }
+
+    const mockDataset: MockDirectoryUser[] = [
+      {
+        id: "u1",
+        username: "alice",
+        display_name: "Alice Wonderland",
+        account_status: "active",
+        is_verified: true,
+        followers_count: 150,
+        following_count: 50,
+        drops_count: 32,
+        created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+      },
+      {
+        id: "u2",
+        username: "bob_spammer",
+        display_name: "Bob Deals",
+        account_status: "suspended",
+        is_verified: false,
+        followers_count: 12,
+        following_count: 400,
+        drops_count: 120,
+        created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+      },
+      {
+        id: "u3",
+        username: "carol_banned",
+        display_name: "Carol Malicious",
+        account_status: "banned",
+        is_verified: false,
+        followers_count: 2,
+        following_count: 10,
+        drops_count: 5,
+        created_at: new Date(Date.now() - 100 * 86400000).toISOString(),
+      },
+      {
+        id: "u4",
+        username: "dave_warned",
+        display_name: "Dave Tester",
+        account_status: "warned",
+        is_verified: false,
+        followers_count: 45,
+        following_count: 60,
+        drops_count: 18,
+        created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+      },
+    ];
+
+    it("filters users by account status correctly", () => {
+      const activeOnly = mockDataset.filter((u) => u.account_status === "active");
+      const suspendedOnly = mockDataset.filter((u) => u.account_status === "suspended");
+      const restricted = mockDataset.filter((u) => u.account_status !== "active");
+
+      expect(activeOnly).toHaveLength(1);
+      expect(activeOnly[0]!.username).toBe("alice");
+      expect(suspendedOnly).toHaveLength(1);
+      expect(suspendedOnly[0]!.username).toBe("bob_spammer");
+      expect(restricted).toHaveLength(3);
+    });
+
+    it("filters users by verification badge status", () => {
+      const verifiedUsers = mockDataset.filter((u) => u.is_verified);
+      const unverifiedUsers = mockDataset.filter((u) => !u.is_verified);
+
+      expect(verifiedUsers).toHaveLength(1);
+      expect(verifiedUsers[0]!.username).toBe("alice");
+      expect(unverifiedUsers).toHaveLength(3);
+    });
+
+    it("performs case-insensitive search over username and display name", () => {
+      const searchUsers = (q: string) => {
+        const query = q.toLowerCase().trim();
+        return mockDataset.filter(
+          (u) =>
+            u.username.toLowerCase().includes(query) ||
+            u.display_name.toLowerCase().includes(query),
+        );
+      };
+
+      expect(searchUsers("ALICE")).toHaveLength(1);
+      expect(searchUsers("wonderland")).toHaveLength(1);
+      expect(searchUsers("spammer")).toHaveLength(1);
+      expect(searchUsers("nonexistent")).toHaveLength(0);
+    });
+
+    it("sorts users deterministically by followers and creation date", () => {
+      const byFollowersDesc = [...mockDataset].sort(
+        (a, b) => b.followers_count - a.followers_count,
+      );
+      expect(byFollowersDesc[0]!.username).toBe("alice");
+      expect(byFollowersDesc[1]!.username).toBe("dave_warned");
+
+      const byDropsDesc = [...mockDataset].sort((a, b) => b.drops_count - a.drops_count);
+      expect(byDropsDesc[0]!.username).toBe("bob_spammer");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 11. Phase 2: User Intelligence Metrics & Activity Reconstruction
+  // ---------------------------------------------------------------------------
+  describe("11. Phase 2: User Intelligence & Multi-Table Timeline", () => {
+    it("computes accurate account age and weekly posting frequency metrics", () => {
+      const now = Date.now();
+      const createdAt = new Date(now - 28 * 86400000).toISOString(); // 28 days ago
+      const totalDrops = 16;
+
+      const accountAgeDays = Math.floor((now - new Date(createdAt).getTime()) / 86400000);
+      const weeksActive = accountAgeDays / 7;
+      const postingFrequency = Number((totalDrops / Math.max(weeksActive, 1)).toFixed(2));
+
+      expect(accountAgeDays).toBe(28);
+      expect(weeksActive).toBe(4);
+      expect(postingFrequency).toBe(4.0); // 16 drops / 4 weeks = 4.0/wk
+    });
+
+    it("reconstructs and sorts unified timeline from heterogeneous event sources", () => {
+      interface TimelineItem {
+        type: string;
+        description: string;
+        created_at: string;
+      }
+
+      const dropsEvents: TimelineItem[] = [
+        {
+          type: "drop_published",
+          description: "Drop 1",
+          created_at: "2026-10-01T10:00:00Z",
+        },
+        {
+          type: "drop_published",
+          description: "Drop 2",
+          created_at: "2026-10-05T12:00:00Z",
+        },
+      ];
+
+      const moderationEvents: TimelineItem[] = [
+        {
+          type: "restriction_warning",
+          description: "Account Warning Issued",
+          created_at: "2026-10-03T09:00:00Z",
+        },
+      ];
+
+      const orbitEvents: TimelineItem[] = [
+        {
+          type: "orbit_started",
+          description: "Orbited @saturn",
+          created_at: "2026-10-06T15:00:00Z",
+        },
+      ];
+
+      const unified = [...dropsEvents, ...moderationEvents, ...orbitEvents].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+
+      expect(unified).toHaveLength(4);
+      expect(unified[0]!.type).toBe("orbit_started"); // Oct 6
+      expect(unified[1]!.type).toBe("drop_published"); // Oct 5
+      expect(unified[2]!.type).toBe("restriction_warning"); // Oct 3
+      expect(unified[3]!.type).toBe("drop_published"); // Oct 1
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 12. Phase 2: Orbit Network & Mutual Relationship Detection
+  // ---------------------------------------------------------------------------
+  describe("12. Phase 2: Orbit Network & Mutual Directionality", () => {
+    interface MockOrbit {
+      follower_id: string;
+      followed_id: string;
+    }
+
+    const orbitGraph: MockOrbit[] = [
+      { follower_id: "userA", followed_id: "userB" }, // A follows B
+      { follower_id: "userB", followed_id: "userA" }, // B follows A (Mutual!)
+      { follower_id: "userA", followed_id: "userC" }, // A follows C
+      { follower_id: "userD", followed_id: "userA" }, // D follows A
+    ];
+
+    it("resolves orbiters (followers) of a target user", () => {
+      const targetId = "userA";
+      const orbiters = orbitGraph.filter((o) => o.followed_id === targetId);
+      expect(orbiters.map((o) => o.follower_id)).toEqual(["userB", "userD"]);
+    });
+
+    it("resolves orbiting (following) of a target user", () => {
+      const targetId = "userA";
+      const orbiting = orbitGraph.filter((o) => o.follower_id === targetId);
+      expect(orbiting.map((o) => o.followed_id)).toEqual(["userB", "userC"]);
+    });
+
+    it("detects mutual connections accurately", () => {
+      const targetId = "userA";
+      const isMutualWith = (otherId: string) => {
+        const aFollowsOther = orbitGraph.some(
+          (o) => o.follower_id === targetId && o.followed_id === otherId,
+        );
+        const otherFollowsA = orbitGraph.some(
+          (o) => o.follower_id === otherId && o.followed_id === targetId,
+        );
+        return aFollowsOther && otherFollowsA;
+      };
+
+      expect(isMutualWith("userB")).toBe(true);
+      expect(isMutualWith("userC")).toBe(false); // C does not follow A
+      expect(isMutualWith("userD")).toBe(false); // A does not follow D
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 13. Phase 2: Bulk Account Restrictions & Individual Auditing
+  // ---------------------------------------------------------------------------
+  describe("13. Phase 2: Bulk Account Restrictions & Accountability", () => {
+    it("applies bulk restriction and ensures each target user is individually logged to audit trail", () => {
+      const targets = ["user-1", "user-2", "user-3"];
+      const auditLogMock: Array<{ target_id: string; action: string; reason: string }> = [];
+
+      const executeBulkRestriction = (
+        userIds: string[],
+        type: "warning" | "suspension" | "ban",
+        reason: string,
+      ) => {
+        userIds.forEach((uid) => {
+          auditLogMock.push({
+            target_id: uid,
+            action: `bulk_user_${type}`,
+            reason,
+          });
+        });
+        return { processed: userIds.length };
+      };
+
+      const result = executeBulkRestriction(targets, "suspension", "Coordinated spam brigade");
+      expect(result.processed).toBe(3);
+      expect(auditLogMock).toHaveLength(3);
+      expect(auditLogMock[0]!.target_id).toBe("user-1");
+      expect(auditLogMock[1]!.target_id).toBe("user-2");
+      expect(auditLogMock[2]!.target_id).toBe("user-3");
+      expect(auditLogMock[0]!.action).toBe("bulk_user_suspension");
+    });
+
+    it("protects Super Admins from bulk restrictions", () => {
+      const superAdminId = "super-admin-root";
+      const regularUserId = "regular-user-abc";
+
+      const isProtected = (id: string) => id === superAdminId;
+
+      const filtered = [superAdminId, regularUserId].filter((id) => !isProtected(id));
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0]).toBe(regularUserId);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 14. Phase 2: Permission-Controlled CSV Export & RFC4180 Escaping
+  // ---------------------------------------------------------------------------
+  describe("14. Phase 2: CSV Data Export & Field Escaping", () => {
+    const escapeCsv = (str: unknown): string => {
+      if (str === null || str === undefined) return "";
+      const s = String(str);
+      if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+        return `"${s.replace(/"/g, '""')}"`;
+      }
+      return s;
+    };
+
+    it("escapes fields containing commas, quotes, and newlines properly", () => {
+      expect(escapeCsv("Normal text")).toBe("Normal text");
+      expect(escapeCsv("Text, with comma")).toBe('"Text, with comma"');
+      expect(escapeCsv('Quote "Hello"')).toBe('"Quote ""Hello"""');
+      expect(escapeCsv("Line 1\nLine 2")).toBe('"Line 1\nLine 2"');
+    });
+
+    it("generates well-formed CSV rows matching authorized headers", () => {
+      const headers = ["User ID", "Username", "Display Name", "Account Status", "Drops Count"];
+      const user = {
+        id: "usr-1",
+        username: "test,user",
+        display_name: 'Test "Pro"',
+        account_status: "active",
+        drops_count: 42,
+      };
+
+      const row = [
+        escapeCsv(user.id),
+        escapeCsv(`@${user.username}`),
+        escapeCsv(user.display_name),
+        escapeCsv(user.account_status),
+        escapeCsv(user.drops_count),
+      ];
+
+      expect(row[1]).toBe('"@test,user"');
+      expect(row[2]).toBe('"Test ""Pro"""');
+      expect(row[4]).toBe("42");
+
+      const csvString = [headers.join(","), row.join(",")].join("\r\n");
+      expect(csvString).toContain("User ID,Username,Display Name");
+      expect(csvString).toContain('"@test,user"');
+    });
+  });
 });

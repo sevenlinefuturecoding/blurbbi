@@ -14,4 +14,3 @@ export const Route = createFileRoute("/admin/settings")({
 function AdminSettingsRoute() {
   return <AdminSettingsView />;
 }
-
