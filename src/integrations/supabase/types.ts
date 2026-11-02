@@ -313,6 +313,9 @@ export type Database = {
           suspended_until?: string | null;
           ban_reason?: string | null;
           warning_count?: number | null;
+          current_streak?: number | null;
+          longest_streak?: number | null;
+          last_drop_date?: string | null;
         };
         Insert: {
           avatar_color?: string;
@@ -336,6 +339,9 @@ export type Database = {
           suspended_until?: string | null;
           ban_reason?: string | null;
           warning_count?: number | null;
+          current_streak?: number | null;
+          longest_streak?: number | null;
+          last_drop_date?: string | null;
         };
         Update: {
           avatar_color?: string;
@@ -359,6 +365,9 @@ export type Database = {
           suspended_until?: string | null;
           ban_reason?: string | null;
           warning_count?: number | null;
+          current_streak?: number | null;
+          longest_streak?: number | null;
+          last_drop_date?: string | null;
         };
         Relationships: [];
       };

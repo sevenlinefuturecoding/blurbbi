@@ -15,6 +15,8 @@ export type FeedDrop = {
   pass_count: number;
   created_at: string;
   score: number | string | null;
+  author_streak?: number | null;
+  author_last_drop_date?: string | null;
 };
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"] & {
@@ -24,6 +26,9 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"] & {
   is_verified?: boolean | null;
   is_admin?: boolean | null;
   is_suspended?: boolean | null;
+  current_streak?: number | null;
+  longest_streak?: number | null;
+  last_drop_date?: string | null;
 };
 
 /** Per-viewer engagement state for a set of drops. */

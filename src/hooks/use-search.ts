@@ -12,6 +12,9 @@ export type SearchBlurber = {
   followers_count: number;
   following_count: number;
   is_verified?: boolean;
+  current_streak?: number | null;
+  longest_streak?: number | null;
+  last_drop_date?: string | null;
 };
 
 /**

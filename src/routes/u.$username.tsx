@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toggleOrbit, muteUser, refreshAfterEngagement } from "@/lib/engagement";
 import { compactCount, timeAgo, type FeedDrop, type Profile } from "@/lib/blurbi";
+import { calculateActiveStreak } from "@/lib/streaks";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -391,6 +392,8 @@ function ProfilePage() {
     : allDropsList;
 
   const isVerifiedAccount = p?.is_verified || p?.username === "blurbbi";
+  const activeStreak = calculateActiveStreak(p?.current_streak, p?.last_drop_date);
+  const longestStreak = p?.longest_streak ?? 0;
 
   return (
     <div className="space-y-4">
@@ -410,6 +413,11 @@ function ProfilePage() {
             </span>
             {isVerifiedAccount && (
               <BadgeCheck className="h-4 w-4 text-primary fill-primary/20 shrink-0" />
+            )}
+            {activeStreak > 0 && (
+              <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-orange-500 shrink-0">
+                🔥 {activeStreak}d
+              </span>
             )}
           </div>
           <span className="text-[11px] text-muted-foreground">
@@ -515,6 +523,15 @@ function ProfilePage() {
                   <BadgeCheck className="h-5 w-5 text-primary fill-primary/20 shrink-0" />
                 </span>
               )}
+              {activeStreak > 0 && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 py-0.5 text-xs font-semibold text-orange-500 border border-orange-500/20 shadow-2xs shrink-0"
+                  title={`${activeStreak}-day posting streak`}
+                >
+                  <Flame className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />
+                  <span>{activeStreak}-day streak</span>
+                </span>
+              )}
             </div>
             <p className="text-sm font-medium text-muted-foreground">@{p.username}</p>
           </div>
@@ -586,6 +603,18 @@ function ProfilePage() {
               </strong>{" "}
               <span className="text-muted-foreground group-hover:text-foreground">Orbiting</span>
             </button>
+
+            {longestStreak > 0 && (
+              <span className="text-muted-foreground flex items-center gap-1">
+                <Flame className="h-3.5 w-3.5 text-orange-500 fill-orange-500 shrink-0" />
+                <span>
+                  <strong className="font-bold text-foreground tabular-nums">
+                    {longestStreak}d
+                  </strong>{" "}
+                  best streak
+                </span>
+              </span>
+            )}
           </div>
         </section>
       ) : (

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toggleOrbit, refreshAfterEngagement } from "@/lib/engagement";
 import { compactCount } from "@/lib/blurbi";
 import type { SearchBlurber } from "@/hooks/use-search";
+import { useUserStreak } from "@/hooks/use-user-streak";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,12 @@ export function BlurberCard({
   }, [isOrbited]);
 
   const isSelf = viewerId === blurber.id;
+
+  const streakInfo = useUserStreak(blurber.id, {
+    current_streak: blurber.current_streak,
+    longest_streak: blurber.longest_streak,
+    last_drop_date: blurber.last_drop_date,
+  });
 
   async function handleToggleOrbit(e: React.MouseEvent) {
     e.preventDefault();
@@ -96,6 +103,15 @@ export function BlurberCard({
               {blurber.is_verified && (
                 <span title="Verified Blurber" className="inline-flex shrink-0">
                   <BadgeCheck className="h-3.5 w-3.5 text-primary fill-primary/20" />
+                </span>
+              )}
+              {streakInfo.activeStreak > 0 && (
+                <span
+                  className="inline-flex items-center gap-0.5 rounded-full bg-orange-500/10 px-1.5 py-0.2 text-[10.5px] font-semibold text-orange-500 border border-orange-500/20 shrink-0"
+                  title={`🔥 ${streakInfo.activeStreak}-day drop streak`}
+                >
+                  <span className="text-[10px]">🔥</span>
+                  <span>{streakInfo.activeStreak}d</span>
                 </span>
               )}
             </div>

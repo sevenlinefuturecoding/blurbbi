@@ -33,6 +33,7 @@ import {
   refreshAfterEngagement,
 } from "@/lib/engagement";
 import { compactCount, timeAgo, type FeedDrop } from "@/lib/blurbi";
+import { useUserStreak } from "@/hooks/use-user-streak";
 import type { EngagementState } from "@/lib/blurbi";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -63,6 +64,11 @@ export function DropCard({
   const sparked = engagement?.sparked.has(drop.drop_id) ?? false;
   const relayed = engagement?.relayed.has(drop.drop_id) ?? false;
   const passed = engagement?.passed.has(drop.drop_id) ?? false;
+
+  const streakInfo = useUserStreak(drop.author_id, {
+    current_streak: drop.author_streak,
+    last_drop_date: drop.author_last_drop_date,
+  });
 
   function requireViewer(): boolean {
     if (!viewerId) {
@@ -180,6 +186,15 @@ export function DropCard({
                 >
                   {drop.display_name || drop.username}
                 </Link>
+                {streakInfo.activeStreak > 0 && (
+                  <span
+                    className="inline-flex items-center gap-0.5 rounded-full bg-orange-500/10 px-1.5 py-0.2 text-[11px] font-semibold text-orange-500 border border-orange-500/20 shrink-0"
+                    title={`🔥 ${streakInfo.activeStreak}-day drop streak`}
+                  >
+                    <span className="text-[10px]">🔥</span>
+                    <span>{streakInfo.activeStreak}d</span>
+                  </span>
+                )}
                 <span className="hidden truncate text-xs text-muted-foreground sm:inline">
                   @{drop.username}
                 </span>

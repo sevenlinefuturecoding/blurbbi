@@ -1,12 +1,15 @@
 import { useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { EmojiPickerPopover } from "./emoji-picker";
 import { MAX_DROP_LENGTH } from "@/lib/blurbi";
 import { supabase } from "@/integrations/supabase/client";
 import { notifyMentions } from "@/lib/mentions";
+import { useUserStreak } from "@/hooks/use-user-streak";
+import { getStreakCelebration } from "@/lib/streaks";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Flame } from "lucide-react";
 
 /**
  * Modern, compact, expanding Drop Composer.
@@ -32,6 +35,8 @@ export function Composer({
   const [busy, setBusy] = useState(false);
   const [isFocused, setIsFocused] = useState(autoFocus);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const qc = useQueryClient();
+  const userStreak = useUserStreak(userId);
 
   const remaining = MAX_DROP_LENGTH - text.length;
   const canPost = text.trim().length > 0 && remaining >= 0 && !busy;
@@ -75,7 +80,13 @@ export function Composer({
       }
       setText("");
       setIsFocused(false);
-      toast.success("Drop released into the Stream 🌊");
+      const celebration = getStreakCelebration(userStreak.nextStreak, userStreak.hasPostedToday);
+      toast.success(celebration.title, {
+        description: celebration.message,
+      });
+      qc.invalidateQueries({ queryKey: ["user-streak", userId] });
+      qc.invalidateQueries({ queryKey: ["profile"] });
+      qc.invalidateQueries({ queryKey: ["my-profile"] });
       if (newDrop?.id) {
         notifyMentions(newDrop.id, content, userId);
       }
@@ -128,12 +139,39 @@ export function Composer({
           isExpanded ? "mt-2 pt-2 border-t border-border/40" : "mt-1",
         )}
       >
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <EmojiPickerPopover onPick={insertEmoji} />
           {isExpanded && (
-            <span className="text-[11px] text-muted-foreground/80 hidden sm:inline select-none">
-              Text & emoji only
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-muted-foreground/80 hidden sm:inline select-none">
+                Text & emoji only
+              </span>
+              {userStreak.hasPostedToday ? (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2 py-0.5 text-[11px] font-medium text-orange-500 border border-orange-500/20 select-none"
+                  title="Daily drop streak recorded for today"
+                >
+                  <Flame className="h-3 w-3 fill-orange-500 shrink-0" />
+                  <span>{userStreak.activeStreak}d streak maintained</span>
+                </span>
+              ) : userStreak.activeStreak > 0 ? (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2 py-0.5 text-[11px] font-semibold text-orange-500 border border-orange-500/20 select-none animate-pulse"
+                  title="Post a drop today to continue your streak"
+                >
+                  <Flame className="h-3 w-3 fill-orange-500 shrink-0" />
+                  <span>Drop to keep your {userStreak.activeStreak}d streak!</span>
+                </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground select-none"
+                  title="Drop daily to build your streak"
+                >
+                  <Flame className="h-3 w-3 shrink-0" />
+                  <span>Start daily streak</span>
+                </span>
+              )}
+            </div>
           )}
         </div>
 
