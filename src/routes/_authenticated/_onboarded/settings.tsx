@@ -6,9 +6,20 @@ import { useMyProfile } from "@/hooks/use-my-profile";
 import { BlurbiAvatar } from "@/components/blurbi/blurbi-avatar";
 import { EditProfileDialog } from "@/components/blurbi/edit-profile-dialog";
 import { Button } from "@/components/ui/button";
-import { VolumeX, EyeOff, LogOut, UserPen } from "lucide-react";
+import {
+  VolumeX,
+  EyeOff,
+  LogOut,
+  UserPen,
+  Smartphone,
+  Download,
+  CheckCircle2,
+  Share,
+  PlusSquare,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { usePwa } from "@/hooks/use-pwa";
 
 export const Route = createFileRoute("/_authenticated/_onboarded/settings")({
   head: () => ({
@@ -41,6 +52,8 @@ function Settings() {
   const { data: me } = useMyProfile();
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [showIosGuide, setShowIosGuide] = useState(false);
+  const { canInstall, isStandalone, isIOS, isInstalled, installApp } = usePwa();
 
   const muted = useQuery({
     queryKey: ["mutes", me?.id],
@@ -203,6 +216,74 @@ function Settings() {
                 </Button>
               </div>
             ))}
+          </div>
+        )}
+      </section>
+
+      {/* PWA Web App Section */}
+      <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold flex items-center gap-1.5">
+              <Smartphone className="h-4 w-4 text-primary" />
+              Blurbbi Web App (PWA)
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Install Blurbbi for instant launch from home screen, offline browsing, and faster load
+              times.
+            </p>
+          </div>
+          {isStandalone || isInstalled ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-500 border border-emerald-500/20 shrink-0">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Installed
+            </span>
+          ) : null}
+        </div>
+
+        {!isStandalone && !isInstalled && (
+          <div className="mt-4 pt-3 border-t border-border/50">
+            {canInstall ? (
+              <Button onClick={installApp} className="w-full rounded-full font-semibold">
+                <Download className="mr-1.5 h-4 w-4" /> Install Blurbbi App
+              </Button>
+            ) : isIOS ? (
+              <div>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowIosGuide(!showIosGuide)}
+                  className="w-full rounded-full font-semibold"
+                >
+                  <Download className="mr-1.5 h-4 w-4" /> Install on iPhone / iPad
+                </Button>
+                {showIosGuide && (
+                  <div className="mt-3 rounded-2xl bg-muted/40 p-3.5 text-xs text-muted-foreground space-y-2 border border-border/60">
+                    <div className="flex items-start gap-2">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[10px]">
+                        1
+                      </span>
+                      <span>
+                        Tap the <strong>Share</strong> button{" "}
+                        <Share className="inline h-3 w-3 text-foreground" /> in Safari's bottom bar.
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[10px]">
+                        2
+                      </span>
+                      <span>
+                        Select <strong>Add to Home Screen</strong>{" "}
+                        <PlusSquare className="inline h-3 w-3 text-foreground" />.
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                To install, open this page in Chrome, Edge, Safari, or a PWA-compatible browser and
+                select &quot;Install&quot; or &quot;Add to Home Screen&quot;.
+              </p>
+            )}
           </div>
         )}
       </section>

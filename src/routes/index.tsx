@@ -8,6 +8,7 @@ import { useEngagement } from "@/hooks/use-engagement";
 import { AppShell } from "@/components/blurbi/app-shell";
 import { Composer } from "@/components/blurbi/composer";
 import { DropCard } from "@/components/blurbi/drop-card";
+import { PwaInstallBanner } from "@/components/blurbi/pwa-install-banner";
 import { BlurbiAvatar } from "@/components/blurbi/blurbi-avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { timeAgo, compactCount, type FeedDrop } from "@/lib/blurbi";
@@ -185,6 +186,9 @@ function Home() {
             </div>
           )}
         </section>
+
+        {/* PWA Install Banner */}
+        <PwaInstallBanner className="my-1" />
 
         {/* Drop Composer / Guest Prompt */}
         {me ? (

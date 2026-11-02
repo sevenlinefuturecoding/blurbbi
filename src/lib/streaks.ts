@@ -152,4 +152,3 @@ export function getStreakCelebration(
     message: `${nextStreak} consecutive days of dropping! Keep the momentum going!`,
   };
 }
-

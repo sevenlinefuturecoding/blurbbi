@@ -14,12 +14,14 @@ import {
   Bell,
   Search,
   ShieldCheck,
+  Download,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyProfile } from "@/hooks/use-my-profile";
 import { useUnreadNotificationsCount } from "@/hooks/use-notifications";
+import { usePwa } from "@/hooks/use-pwa";
 import { Composer } from "./composer";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -28,6 +30,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [composeOpen, setComposeOpen] = useState(false);
+  const { canInstall, installApp } = usePwa();
   const [dark, setDark] = useState(
     () => typeof document !== "undefined" && document.documentElement.classList.contains("dark"),
   );
@@ -116,6 +119,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Plus className="h-4 w-4" /> New Drop
         </Button>
         <div className="mt-auto flex flex-col gap-0.5">
+          {canInstall && (
+            <button
+              onClick={installApp}
+              className="flex items-center gap-3 rounded-full border border-primary/25 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/20 mb-1"
+            >
+              <Download className="h-5 w-5 shrink-0" />
+              <span className="truncate">Install App</span>
+            </button>
+          )}
           <button
             onClick={toggleTheme}
             className="flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"

@@ -92,8 +92,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "A minimal stream of short text drops." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      // Progressive Web App (PWA) meta tags
+      { name: "theme-color", content: "#FF6B4A" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Blurbbi" },
+      { name: "application-name", content: "Blurbbi" },
+      { name: "msapplication-TileColor", content: "#FF6B4A" },
+      { name: "msapplication-TileImage", content: "/icon-512.png" },
     ],
     links: [
+      {
+        rel: "manifest",
+        href: "/manifest.webmanifest",
+      },
+      {
+        rel: "apple-touch-icon",
+        href: "/apple-touch-icon.png",
+        sizes: "180x180",
+      },
       {
         rel: "stylesheet",
         href: appCss,
